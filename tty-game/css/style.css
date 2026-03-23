@@ -596,6 +596,28 @@ body {
   letter-spacing: 1px;
 }
 
+/* Mobile next-day button (hidden on desktop) */
+.mobile-next-btn {
+  display: none;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.mobile-next-btn:hover { opacity: 0.88; }
+.mobile-next-btn:disabled {
+  background: #2f3336;
+  color: #536471;
+  cursor: not-allowed;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .layout { grid-template-columns: 60px 1fr; }
@@ -607,4 +629,5 @@ body {
   .layout { grid-template-columns: 1fr; }
   #left-sidebar { display: none; }
   #feed { border: none; }
+  .mobile-next-btn { display: block; }
 }

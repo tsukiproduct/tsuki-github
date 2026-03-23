@@ -116,14 +116,14 @@ function updateDayPanel() {
   document.getElementById('day-badge').textContent = `Day ${G.day}`;
   document.getElementById('follow-count').textContent = G.following.size;
 
+  const isDone = G.day >= G.maxDay || G.choiceMade;
   const btn = document.getElementById('day-next-btn');
-  if (G.day >= G.maxDay || G.choiceMade) {
-    btn.textContent = '───';
-    btn.disabled = true;
-  } else {
-    btn.textContent = '次の日へ →';
-    btn.disabled = false;
-  }
+  btn.textContent = isDone ? '───' : '次の日へ →';
+  btn.disabled = isDone;
+
+  const mobileBtn = document.getElementById('mobile-next-btn');
+  mobileBtn.textContent = isDone ? '───' : '次の日へ →';
+  mobileBtn.disabled = isDone;
 }
 
 // ===== NEXT DAY =====
