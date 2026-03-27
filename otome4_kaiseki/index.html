@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>乙女4 設定判別</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #08070a;
+  --bg2:     #0f0d14;
+  --bg3:     #16131e;
+  --border:  #2a2438;
+  --border2: #3d3555;
+  --red:     #e0203a;
+  --red-dim: #7a0f1e;
+  --gold:    #c8922a;
+  --gold-hi: #f0b840;
+  --gold-dim:#5a3d0a;
+  --cyan:    #18c8d4;
+  --cyan-dim:#0a4a50;
+  --purple:  #9060e8;
+  --green:   #22c97a;
+  --orange:  #e86020;
+  --t1: #f0ecff;
+  --t2: #9890b8;
+  --t3: #504870;
+  --s1c:#484060; --s2c:#5a5075; --s3c:#9890b8;
+  --s4c:#c8922a; --s5c:#e86020; --s6c:#e0203a;
+  --tab-h: 62px;
+  --hdr-h: 38px;
+  --r: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:#08070a}
+body{
+  background:var(--bg);color:var(--t1);
+  font-family:'Noto Sans JP',sans-serif;font-size:14px;
+  overscroll-behavior:none;
+  padding-top:var(--hdr-h);
+  padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 40px);
+}
+input,button,textarea{font-family:inherit;color-scheme:dark}
+
+/* ── HEADER (超コンパクト) ── */
+.hdr{
+position:fixed;top:0;left:0;right:0;height:var(–hdr-h);
+background:#08070a;
+border-bottom:1px solid #2a2438;
+display:flex;align-items:center;justify-content:space-between;
+padding:0 14px;z-index:200;
+}
+.hdr-title{
+font-family:‘Rajdhani’,sans-serif;font-size:16px;font-weight:700;
+background:linear-gradient(90deg,var(–gold-hi),var(–gold));
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+background-clip:text;letter-spacing:1px;
+}
+.hdr-sub{font-size:10px;color:var(–t3);letter-spacing:2px}
+
+/* ── TAB NAV ── */
+.tabnav{
+position:fixed;bottom:0;left:0;right:0;
+height:var(–tab-h);
+background:var(–bg2);border-top:1px solid var(–border2);
+display:flex;z-index:200;
+padding-bottom:env(safe-area-inset-bottom);
+}
+.tn{
+flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+gap:2px;cursor:pointer;border:none;background:transparent;color:var(–t3);
+transition:color .15s;padding:6px 0;
+}
+.tn.act{color:var(–gold-hi)}
+.tn-ic{font-size:20px;line-height:1}
+.tn-lb{font-size:10px;font-weight:700}
+
+/* ── PAGES ── */
+.page{display:none;padding:10px 12px 16px;animation:fi .18s ease}
+.page.act{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARD ── */
+.card{
+background:var(–bg2);border:1px solid var(–border);
+border-radius:var(–r);padding:14px;margin-bottom:10px;
+position:relative;overflow:hidden;
+}
+.card-line{
+position:absolute;top:0;left:0;width:3px;height:100%;
+background:var(–gold);
+}
+.card-line.red{background:var(–red)}
+.card-line.cyan{background:var(–cyan)}
+.card-line.purple{background:var(–purple)}
+
+.sec{
+font-size:11px;font-weight:900;letter-spacing:2px;
+color:var(–t3);margin-bottom:12px;
+display:flex;align-items:center;gap:6px;
+}
+.sec::after{content:’’;flex:1;height:1px;background:var(–border)}
+
+/* ── 入力欄 (大きく・押しやすく) ── */
+.field{
+display:flex;align-items:center;
+padding:10px 0;border-bottom:1px solid var(–border);
+gap:10px;
+}
+.field:last-child{border-bottom:none}
+.field-lbl{flex:1;font-size:14px;color:var(–t2);line-height:1.4}
+.field-lbl small{display:block;font-size:11px;color:var(–t3);margin-top:2px}
+
+/* 数値入力: 大きく・数字キーボード対応 */
+.num-wrap{display:flex;align-items:center;gap:0;border:1px solid var(–border2);border-radius:8px;overflow:hidden}
+.num-btn{
+width:40px;height:48px;
+background:var(–bg3);border:none;
+color:var(–t1);font-size:22px;font-weight:700;
+cursor:pointer;display:flex;align-items:center;justify-content:center;
+transition:background .1s;flex-shrink:0;
+}
+.num-btn:active{background:var(–border2)}
+.num-inp{
+width:64px;height:48px;text-align:center;
+background:var(–bg3);border:none;border-left:1px solid var(–border);border-right:1px solid var(–border);
+color:var(–t1);font-size:20px;font-weight:700;
+}
+.num-inp:focus{outline:none;background:#1a1630}
+
+/* ── CHIPS (大きめ・押しやすい) ── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.chip{
+padding:9px 14px;border-radius:6px;font-size:13px;font-weight:700;
+cursor:pointer;border:1px solid var(–border2);
+background:var(–bg3);color:var(–t3);
+transition:all .12s;white-space:nowrap;
+min-height:40px;display:flex;align-items:center;
+}
+.chip.on{background:var(–red-dim);border-color:var(–red);color:#fff}
+.chip.on.gold{background:var(–gold-dim);border-color:var(–gold);color:var(–gold-hi)}
+.chip.on.cyan{background:var(–cyan-dim);border-color:var(–cyan);color:var(–cyan)}
+.chip-sub{font-size:10px;opacity:.75;margin-left:4px}
+
+/* ── 判別ボタン ── */
+.btn-judge{
+width:100%;padding:18px;margin-top:8px;
+background:linear-gradient(135deg,#8a0f1e,#c01828);
+border:1px solid var(–red);border-radius:var(–r);
+color:#fff;font-size:17px;font-weight:900;letter-spacing:2px;
+cursor:pointer;box-shadow:0 0 24px #c0182840;
+transition:all .15s;
+}
+.btn-judge:active{transform:scale(.98);box-shadow:none}
+.btn-reset{
+width:100%;padding:12px;margin-top:8px;
+background:transparent;border:1px solid var(–border);
+border-radius:6px;color:var(–t3);font-size:13px;cursor:pointer;
+}
+
+/* ── 結果パネル ── */
+.result-panel{
+background:var(–bg2);border:1px solid var(–border2);
+border-radius:var(–r);overflow:hidden;margin-top:10px;
+}
+/* 設定番号ドーン */
+.result-top{
+background:linear-gradient(135deg,#0d0a18,#1a1030);
+padding:20px 16px;text-align:center;
+border-bottom:1px solid var(–border2);
+}
+.result-setting-label{font-size:12px;color:var(–t3);letter-spacing:2px;margin-bottom:4px}
+.result-setting-num{
+font-family:‘Rajdhani’,sans-serif;font-size:72px;font-weight:700;
+line-height:1;
+}
+.result-setting-name{font-size:16px;font-weight:900;margin-top:4px}
+.result-conf{
+display:inline-block;margin-top:8px;
+padding:4px 16px;border-radius:20px;
+font-size:13px;font-weight:700;
+}
+
+/* バー */
+.result-bars{padding:14px}
+.sbar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sbar-lbl{
+font-family:‘Rajdhani’,sans-serif;font-size:14px;font-weight:700;
+width:24px;text-align:center;flex-shrink:0;
+}
+.sbar-track{
+flex:1;height:22px;background:var(–bg3);
+border-radius:4px;overflow:hidden;
+}
+.sbar-fill{
+height:100%;border-radius:4px;
+transition:width .7s cubic-bezier(.25,.8,.25,1);
+display:flex;align-items:center;justify-content:flex-end;
+padding-right:6px;
+}
+.sbar-fill-txt{font-size:11px;font-weight:900;color:#fff}
+.sbar-pct{width:38px;font-size:13px;font-weight:700;text-align:right;flex-shrink:0}
+
+/* アドバイス */
+.result-advice{
+padding:14px;border-top:1px solid var(–border);
+font-size:13px;color:var(–t2);line-height:1.8;
+}
+.result-advice-title{
+font-size:11px;font-weight:900;letter-spacing:2px;
+color:var(–t3);margin-bottom:8px;
+}
+
+/* ── サイトセブン折りたたみ ── */
+.collapse-btn{
+width:100%;padding:12px;
+background:var(–bg3);border:1px solid var(–border2);
+border-radius:var(–r);color:var(–cyan);
+font-size:13px;font-weight:700;cursor:pointer;
+display:flex;align-items:center;justify-content:center;gap:6px;
+margin-bottom:10px;
+}
+.collapse-content{display:none;margin-bottom:10px}
+.collapse-content.open{display:block}
+.paste-area{
+width:100%;min-height:90px;
+background:var(–bg3);border:1px dashed var(–border2);
+border-radius:var(–r);color:var(–t2);
+font-size:12px;line-height:1.7;padding:10px;resize:vertical;
+}
+.paste-area:focus{outline:none;border-color:var(–cyan)}
+.btn-parse{
+width:100%;padding:13px;margin-top:8px;
+background:linear-gradient(135deg,#1a3a50,#0a7080);
+border:1px solid var(–cyan);border-radius:var(–r);
+color:var(–cyan);font-size:13px;font-weight:900;cursor:pointer;
+}
+.parse-result{
+margin-top:10px;padding:12px;
+background:var(–bg3);border:1px solid var(–border2);
+border-radius:var(–r);display:none;
+}
+.pi{display:flex;justify-content:space-between;padding:5px 0;
+border-bottom:1px solid var(–border);font-size:13px}
+.pi:last-child{border-bottom:none}
+.pi-k{color:var(–t2)} .pi-v{color:var(–gold-hi);font-weight:700}
+.btn-apply{
+width:100%;padding:11px;margin-top:8px;
+background:linear-gradient(135deg,var(–gold-dim),#3d2800);
+border:1px solid var(–gold);border-radius:var(–r);
+color:var(–gold-hi);font-size:13px;font-weight:900;cursor:pointer;
+}
+
+/* ── INFO ── */
+.info{
+background:var(–bg3);border-left:3px solid var(–gold);
+border-radius:0 6px 6px 0;padding:10px 12px;
+font-size:12px;color:var(–t2);line-height:1.7;margin-bottom:8px;
+}
+.info.red{border-color:var(–red)}
+.info.cyan{border-color:var(–cyan)}
+.info b{color:var(–t1)}
+.bad{color:var(–red)} .good{color:var(–green)}
+
+/* ── ZONE MAP ── */
+.zone-bar{height:44px;border-radius:6px;overflow:hidden;display:flex;border:1px solid var(–border);margin-bottom:4px}
+.zs{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;position:relative}
+.zone-ruler{display:flex;justify-content:space-between;font-size:9px;color:var(–t3);padding:0 2px;margin-bottom:16px;margin-top:4px}
+
+/* ── TABLES ── */
+.dtbl{width:100%;border-collapse:collapse;font-size:12px}
+.dtbl th{background:var(–bg3);color:var(–t3);padding:7px 6px;text-align:center;font-size:10px;letter-spacing:1px;border-bottom:1px solid var(–border2);font-weight:900}
+.dtbl td{padding:8px 6px;text-align:center;border-bottom:1px solid var(–border);color:var(–t2)}
+.dtbl tr.s4 td{background:#1a1000}
+.dtbl tr.s5 td{background:#1a0800}
+.dtbl tr.s6 td{background:#1a0008;color:var(–s6c);font-weight:700}
+.dtbl td.hi{color:var(–gold-hi);font-weight:700}
+
+/* ── SURU ── */
+.suru-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.suru-row::-webkit-scrollbar{display:none}
+.suru-c{min-width:62px;flex-shrink:0;background:var(–bg3);border:1px solid var(–border);border-radius:8px;padding:8px 6px;text-align:center}
+.suru-c.warn{border-color:var(–orange)}
+.suru-c.hot{border-color:var(–red);background:#1a0008}
+.suru-n{font-family:‘Rajdhani’,sans-serif;font-size:26px;font-weight:700;line-height:1}
+.suru-lb{font-size:9px;color:var(–t3);margin-top:1px}
+.suru-v{font-size:11px;font-weight:700;margin-top:4px}
+
+/* ── TIPS ── */
+.tip{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(–border);align-items:flex-start}
+.tip:last-child{border-bottom:none}
+.tip-ic{font-size:20px;flex-shrink:0}
+.tip h4{font-size:13px;color:var(–gold-hi);margin-bottom:3px}
+.tip p{font-size:12px;color:var(–t2);line-height:1.6}
+
+/* ── CHECKLIST ── */
+.ck{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(–border);cursor:pointer}
+.ck:last-child{border-bottom:none}
+.ck input{width:20px;height:20px;accent-color:var(–gold);flex-shrink:0}
+.ck span{font-size:13px;color:var(–t2)}
+
+.disclaimer{font-size:10px;color:var(–t3);line-height:1.7;padding:10px;background:var(–bg2);border-radius:6px;margin-top:8px}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(–bg)}
+::-webkit-scrollbar-thumb{background:var(–border2);border-radius:2px}
+</style>
+
+</head>
+<body>
+
+<!-- HEADER -->
+
+<div class="hdr">
+  <div>
+    <div class="hdr-sub">⚔ SETTING ANALYZER</div>
+    <div class="hdr-title">L戦国乙女4</div>
+  </div>
+  <div style="font-size:10px;color:var(--t3)">v3.0</div>
+</div>
+
+<!-- PAGE: 判別 -->
+
+<div class="page act" id="pg-judge">
+
+  <!-- サイトセブン折りたたみ -->
+
+  <button class="collapse-btn" onclick="togglePaste()">
+    <span>📋</span><span id="paste-btn-txt">サイトセブン貼り付け解析を開く</span>
+  </button>
+  <div class="collapse-content" id="paste-area-wrap">
+    <div class="card">
+      <div class="card-line cyan"></div>
+      <div class="sec">📋 サイトセブン貼り付け</div>
+      <div class="info cyan" style="margin-bottom:10px">
+        <b>使い方：</b>台データ画面のテキストを全選択→コピー→貼り付け→解析
+      </div>
+      <textarea class="paste-area" id="paste-inp"
+        placeholder="ここに貼り付け...&#10;&#10;例）総ゲーム数: 3500 / BB: 8 / 差枚: +1200"></textarea>
+      <button class="btn-parse" onclick="parseSite7()">🔍 自動解析する</button>
+      <div class="parse-result" id="parse-result">
+        <div id="parse-items"></div>
+        <button class="btn-apply" onclick="applyParsed()">⬇ 入力欄に反映する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手打ち入力 -->
+
+  <div class="card">
+    <div class="card-line"></div>
+    <div class="sec">🎰 データ入力</div>
+
+```
+<div class="field">
+  <div class="field-lbl">総ゲーム数<small>本日の消化G数</small></div>
+  <div class="num-wrap">
+    <button class="num-btn" onclick="adj('in-g',-100)">−</button>
+    <input type="number" class="num-inp" id="in-g" value="0" min="0" inputmode="numeric">
+    <button class="num-btn" onclick="adj('in-g',100)">+</button>
+  </div>
+</div>
+<div class="field">
+  <div class="field-lbl">初当り回数<small>ボーナス＋AT合計</small></div>
+  <div class="num-wrap">
+    <button class="num-btn" onclick="adj('in-hit',-1)">−</button>
+    <input type="number" class="num-inp" id="in-hit" value="0" min="0" inputmode="numeric">
+    <button class="num-btn" onclick="adj('in-hit',1)">+</button>
+  </div>
+</div>
+<div class="field">
+  <div class="field-lbl">AT直撃回数<small>ボーナス非経由の突入</small></div>
+  <div class="num-wrap">
+    <button class="num-btn" onclick="adj('in-choku',-1)">−</button>
+    <input type="number" class="num-inp" id="in-choku" value="0" min="0" inputmode="numeric">
+    <button class="num-btn" onclick="adj('in-choku',1)">+</button>
+  </div>
+</div>
+<div class="field">
+  <div class="field-lbl">差枚数<small>プラスマイナス</small></div>
+  <div class="num-wrap">
+    <button class="num-btn" onclick="adj('in-diff',-100)">−</button>
+    <input type="number" class="num-inp" id="in-diff" value="0" inputmode="numeric">
+    <button class="num-btn" onclick="adj('in-diff',100)">+</button>
+  </div>
+</div>
+<div class="field">
+  <div class="field-lbl">ゾーン外当選<small>G数下2桁50〜99</small></div>
+  <div class="num-wrap">
+    <button class="num-btn" onclick="adj('in-zout',-1)">−</button>
+    <input type="number" class="num-inp" id="in-zout" value="0" min="0" inputmode="numeric">
+    <button class="num-btn" onclick="adj('in-zout',1)">+</button>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ボーナスG数 -->
+
+  <div class="card">
+    <div class="card-line"></div>
+    <div class="sec">📊 ボーナスG数分布</div>
+    <div class="field">
+      <div class="field-lbl">30G回数<small>低設定に多い</small></div>
+      <div class="num-wrap">
+        <button class="num-btn" onclick="adj('in-b30',-1)">−</button>
+        <input type="number" class="num-inp" id="in-b30" value="0" min="0" inputmode="numeric">
+        <button class="num-btn" onclick="adj('in-b30',1)">+</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-lbl">40G回数<small>高設定ほど多い</small></div>
+      <div class="num-wrap">
+        <button class="num-btn" onclick="adj('in-b40',-1)">−</button>
+        <input type="number" class="num-inp" id="in-b40" value="0" min="0" inputmode="numeric">
+        <button class="num-btn" onclick="adj('in-b40',1)">+</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-lbl">50G回数<small>高設定ほど多い</small></div>
+      <div class="num-wrap">
+        <button class="num-btn" onclick="adj('in-b50',-1)">−</button>
+        <input type="number" class="num-inp" id="in-b50" value="0" min="0" inputmode="numeric">
+        <button class="num-btn" onclick="adj('in-b50',1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 示唆演出 -->
+
+  <div class="card">
+    <div class="card-line red"></div>
+    <div class="sec">✨ 設定示唆演出</div>
+
+```
+<div style="font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:700">AT終了画面</div>
+<div class="chips" id="g-end">
+  <div class="chip on" data-v="none" onclick="chip(this,'end')">なし</div>
+  <div class="chip" data-v="def1" onclick="chip(this,'end')">①デフォルト</div>
+  <div class="chip" data-v="def2" onclick="chip(this,'end')">②デフォルト</div>
+  <div class="chip" data-v="hi_weak" onclick="chip(this,'end')">高設定示唆(弱)</div>
+  <div class="chip" data-v="s5up" onclick="chip(this,'end')">全員集合<span class="chip-sub">5↑確定</span></div>
+  <div class="chip" data-v="s6" onclick="chip(this,'end')">卑弥呼<span class="chip-sub">6確定🔥</span></div>
+</div>
+
+<div style="font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:700">スタンプ</div>
+<div class="chips" id="g-stamp">
+  <div class="chip on" data-v="none" onclick="chip(this,'stamp')">なし</div>
+  <div class="chip" data-v="yu" onclick="chip(this,'stamp')">優<span class="chip-sub">5↑</span></div>
+  <div class="chip" data-v="goku" onclick="chip(this,'stamp')">極<span class="chip-sub">6濃厚</span></div>
+</div>
+
+<div style="font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:700">乙女のシークレットトーク（1人目）</div>
+<div class="chips" id="g-talk">
+  <div class="chip on" data-v="none" onclick="chip(this,'talk')">未確認</div>
+  <div class="chip" data-v="ougai" onclick="chip(this,'talk')">オウガイ<span class="chip-sub">特大差🔥</span></div>
+  <div class="chip" data-v="nobunaga" onclick="chip(this,'talk')">ノブナガ<span class="chip-sub">高設定↑</span></div>
+  <div class="chip" data-v="ieyasu" onclick="chip(this,'talk')">イエヤス<span class="chip-sub">高設定↑</span></div>
+  <div class="chip" data-v="ujimasa" onclick="chip(this,'talk')">ウジマサ<span class="chip-sub">高設定↑</span></div>
+</div>
+
+<div style="font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:700">エピソードボーナスキャラ</div>
+<div class="chips" id="g-ep">
+  <div class="chip on" data-v="none" onclick="chip(this,'ep')">未確認</div>
+  <div class="chip" data-v="kansuke" onclick="chip(this,'ep')">カンスケ<span class="chip-sub">奇数↑</span></div>
+  <div class="chip" data-v="sourin" onclick="chip(this,'ep')">ソウリン<span class="chip-sub">偶数↑</span></div>
+  <div class="chip" data-v="ujimasa2" onclick="chip(this,'ep')">ウジマサ<span class="chip-sub">奇数高↑</span></div>
+  <div class="chip" data-v="hideaki" onclick="chip(this,'ep')">ヒデアキ<span class="chip-sub">偶数高↑</span></div>
+</div>
+
+<div style="font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:700">獲得枚数表示</div>
+<div class="chips" id="g-maisuu">
+  <div class="chip on" data-v="none" onclick="chip(this,'maisuu')">なし</div>
+  <div class="chip" data-v="444" onclick="chip(this,'maisuu')">444OVER<span class="chip-sub">4↑</span></div>
+  <div class="chip" data-v="666" onclick="chip(this,'maisuu')">666OVER<span class="chip-sub">6確定🔥</span></div>
+</div>
+
+<div style="font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:700">打-WIN LITE「隠れ凪」</div>
+<div class="chips" id="g-nagi">
+  <div class="chip on" data-v="none" onclick="chip(this,'nagi')">未確認</div>
+  <div class="chip" data-v="hi" onclick="chip(this,'nagi')">高設定示唆</div>
+  <div class="chip" data-v="s6" onclick="chip(this,'nagi')">「お肉〜」<span class="chip-sub">6確定🔥</span></div>
+</div>
+```
+
+  </div>
+
+<button class="btn-judge" onclick="judge()">⚔ 設定を判別する</button>
+<button class="btn-reset" onclick="resetAll()">🔄 全てリセット</button>
+
+  <!-- 結果 -->
+
+  <div id="result-wrap" style="display:none;margin-top:12px">
+    <div class="result-panel">
+      <div class="result-top">
+        <div class="result-setting-label">最有力設定</div>
+        <div class="result-setting-num" id="r-num">—</div>
+        <div class="result-setting-name" id="r-name">—</div>
+        <div class="result-conf" id="r-conf">—</div>
+      </div>
+      <div class="result-bars" id="r-bars"></div>
+      <div class="result-advice">
+        <div class="result-advice-title">💬 ADVICE</div>
+        <div id="r-advice">—</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PAGE: ゾーン -->
+
+<div class="page" id="pg-zone">
+  <div class="card">
+    <div class="card-line cyan"></div>
+    <div class="sec">🗺 ゾーン MAP</div>
+    <div class="zone-bar">
+      <div class="zs" style="width:12.5%;background:#0a1a0a;color:#2a6a2a">天</div>
+      <div class="zs" style="width:12.5%;background:#080810"></div>
+      <div class="zs" style="width:6.25%;background:#5a1a00;color:#ff8040">◉</div>
+      <div class="zs" style="width:6.25%;background:#080810"></div>
+      <div class="zs" style="width:6.25%;background:#c01020;color:#fff;font-size:8px">MAX</div>
+      <div class="zs" style="width:6.25%;background:#802010;color:#ffa060">延</div>
+      <div class="zs" style="width:12.5%;background:#080810"></div>
+      <div class="zs" style="width:6.25%;background:#5a2a00;color:#ffb060">◉</div>
+      <div class="zs" style="width:18.75%;background:#080810"></div>
+      <div class="zs" style="width:12.5%;background:#7a0f1e;color:#ff8090;font-size:8px">天井</div>
+    </div>
+    <div class="zone-ruler">
+      <span>0</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500</span><span>600</span><span>700</span><span>799</span>
+    </div>
+    <table class="dtbl">
+      <tr><th>G数帯</th><th>期待度</th><th>備考</th></tr>
+      <tr><td>0〜99G</td><td style="color:var(--green)">天国確認</td><td style="font-size:11px;color:var(--t3)">引き戻し消化</td></tr>
+      <tr class="s4"><td class="hi">200〜249G</td><td style="color:var(--orange)">★★ 熱</td><td style="font-size:11px">チャンスゾーン</td></tr>
+      <tr class="s6"><td>300〜349G</td><td style="color:var(--red)">★★★ 最熱</td><td style="font-size:11px">最大ゾーン</td></tr>
+      <tr class="s5"><td class="hi">350〜400G</td><td style="color:var(--orange)">★★ 熱</td><td style="font-size:11px">延長ゾーン</td></tr>
+      <tr><td>400〜499G</td><td>低</td><td style="font-size:11px;color:var(--t3)">通常域</td></tr>
+      <tr class="s4"><td class="hi">500〜549G</td><td style="color:var(--orange)">★★ 熱</td><td style="font-size:11px">後半ゾーン</td></tr>
+      <tr class="s6"><td>700〜799G</td><td style="color:var(--red)">天井間近</td><td style="font-size:11px">ボーナス確定圏</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-line red"></div>
+    <div class="sec">🔢 スルー回数</div>
+    <div class="suru-row">
+      <div class="suru-c"><div class="suru-n" style="color:var(--t3)">0</div><div class="suru-lb">スルー</div><div class="suru-v" style="color:var(--t3)">基準</div></div>
+      <div class="suru-c"><div class="suru-n" style="color:var(--t2)">1</div><div class="suru-lb">スルー</div><div class="suru-v">50G〜</div></div>
+      <div class="suru-c"><div class="suru-n" style="color:var(--gold)">2</div><div class="suru-lb">スルー</div><div class="suru-v" style="color:var(--gold)">100G〜</div></div>
+      <div class="suru-c warn"><div class="suru-n" style="color:var(--orange)">3</div><div class="suru-lb">スルー</div><div class="suru-v" style="color:var(--orange)">200G〜</div></div>
+      <div class="suru-c warn"><div class="suru-n" style="color:var(--orange)">4</div><div class="suru-lb">スルー</div><div class="suru-v" style="color:var(--orange)">300G〜</div></div>
+      <div class="suru-c hot"><div class="suru-n" style="color:var(--red)">5</div><div class="suru-lb">スルー</div><div class="suru-v" style="color:var(--red)">即着可</div></div>
+      <div class="suru-c hot"><div class="suru-n" style="color:#ff4060">6</div><div class="suru-lb">スルー</div><div class="suru-v" style="color:#ff4060">EP確定!</div></div>
+    </div>
+    <div class="info red" style="margin-top:8px">
+      <b>スルー天井：</b>AT非当選6連続 → 7回目エピソードボーナス確定<br>
+      <span class="bad">⚠ リセット：AT中ボーナス・しゅつじんのとき・神謀覚醒</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-line"></div>
+    <div class="sec">🚪 やめどき</div>
+    <div class="tip"><div class="tip-ic">🔴</div><div><h4>ボーナス後</h4><p>天国モード移行確認。非天国なら即やめOK。夕方アイキャッチ=天国濃厚。</p></div></div>
+    <div class="tip"><div class="tip-ic">🟡</div><div><h4>AT後は最低99G</h4><p>（超）強カワループ突入中。99Gまで打って直撃チャンスを消化してやめ。</p></div></div>
+    <div class="tip"><div class="tip-ic">🟢</div><div><h4>エンディング後は続行必須</h4><p>天国確定＋超強カワループ。画面左右にモヤ出現。絶対続行。</p></div></div>
+  </div>
+</div>
+
+<!-- PAGE: スペック -->
+
+<div class="page" id="pg-spec">
+  <div class="card">
+    <div class="card-line" style="background:var(--gold)"></div>
+    <div class="sec">📈 基本スペック</div>
+    <table class="dtbl">
+      <tr><th>設定</th><th>機械割</th><th>初当り</th><th>AT初当り</th><th>CZ</th></tr>
+      <tr><td style="color:var(--s1c)">1</td><td style="color:var(--s1c)">98.2%</td><td style="color:var(--s1c)">1/272.7</td><td style="color:var(--s1c)">1/429.2</td><td style="color:var(--s1c)">1/467.6</td></tr>
+      <tr><td style="color:var(--s2c)">2</td><td style="color:var(--s2c)">99.0%</td><td style="color:var(--s2c)">1/267.3</td><td style="color:var(--s2c)">1/417.8</td><td style="color:var(--s2c)">1/452.2</td></tr>
+      <tr><td style="color:var(--s3c)">3</td><td style="color:var(--s3c)">101.2%</td><td style="color:var(--s3c)">1/255.3</td><td style="color:var(--s3c)">1/393.6</td><td style="color:var(--s3c)">1/434.7</td></tr>
+      <tr class="s4"><td style="color:var(--s4c)">4</td><td style="color:var(--s4c)">105.4%</td><td style="color:var(--s4c)">1/238.2</td><td style="color:var(--s4c)">1/361.3</td><td style="color:var(--s4c)">1/410.9</td></tr>
+      <tr class="s5"><td style="color:var(--s5c)">5</td><td style="color:var(--s5c)">110.2%</td><td style="color:var(--s5c)">1/223.2</td><td style="color:var(--s5c)">1/334.1</td><td style="color:var(--s5c)">1/394.9</td></tr>
+      <tr class="s6"><td>6</td><td>113.0%</td><td>1/217.1</td><td>1/319.2</td><td>1/381.5</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-line red"></div>
+    <div class="sec">⚡ AT・特化ゾーン</div>
+    <table class="dtbl">
+      <tr><th>名称</th><th>純増</th><th>備考</th></tr>
+      <tr><td style="color:var(--gold-hi)">強カワRUSH</td><td>約2.5枚/G</td><td style="font-size:11px;color:var(--t3)">通常AT</td></tr>
+      <tr class="s6"><td>真強カワRUSH</td><td style="font-weight:900">約5.0枚/G</td><td style="font-size:11px">上位AT</td></tr>
+      <tr><td>神謀覚醒</td><td>特化</td><td style="font-size:11px;color:var(--t3)">期待1840枚</td></tr>
+      <tr><td>しゅつじんのとき</td><td>特化</td><td style="font-size:11px;color:var(--t3)">期待3100枚</td></tr>
+      <tr><td>オウガイバトル</td><td>引戻し</td><td style="font-size:11px;color:var(--t3)">50/66/80%継続</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-line cyan"></div>
+    <div class="sec">🔒 リールロック</div>
+    <div class="info"><b>2段階：</b>乙女アタック以上 期待度75%<br>→ 50%ボーナス直撃 / 50%乙女アタック</div>
+    <div class="info red"><b>3段階：</b>ロングフリーズ確定！→ AT＋神謀覚醒確定 <b>期待1840枚</b></div>
+  </div>
+  <div class="card">
+    <div class="card-line purple"></div>
+    <div class="sec">🎬 エピソードキャラ示唆</div>
+    <table class="dtbl">
+      <tr><th>キャラ</th><th>示唆</th></tr>
+      <tr class="s6"><td>ヨシテル</td><td>真強カワRUSH確定</td></tr>
+      <tr><td>山本カンスケ</td><td style="color:#8080ff">奇数設定↑</td></tr>
+      <tr><td>大友ソウリン</td><td style="color:#80ff80">偶数設定↑</td></tr>
+      <tr class="s4"><td>北条ウジマサ</td><td class="hi">奇数＋高設定↑</td></tr>
+      <tr class="s4"><td>小早川ヒデアキ</td><td class="hi">偶数＋高設定↑</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- PAGE: 攻略 -->
+
+<div class="page" id="pg-tips">
+  <div class="card">
+    <div class="card-line"></div>
+    <div class="sec">🏆 高設定の特徴</div>
+    <div class="tip"><div class="tip-ic">🎯</div><div><h4>ハマりが少なく当たりが浅い</h4><p>300G以内でポンポン当たる展開。深くハマる回数が少ない。</p></div></div>
+    <div class="tip"><div class="tip-ic">⚡</div><div><h4>AT直撃が複数回</h4><p>設定6は設定1の約2倍の確率で発生。複数回目撃できれば高設定大チャンス。</p></div></div>
+    <div class="tip"><div class="tip-ic">🎌</div><div><h4>示唆演出が頻繁に出る</h4><p>設定6は天井にあまり行かず、スタンプ・終了画面示唆が多く出る。</p></div></div>
+    <div class="tip"><div class="tip-ic">💎</div><div><h4>ボーナスG数が40〜50G多い</h4><p>高設定ほど40G・50Gを選択しやすい。30G連続は低設定疑い。</p></div></div>
+  </div>
+  <div class="card">
+    <div class="card-line red"></div>
+    <div class="sec">🏅 1日で勝つ条件</div>
+    <div class="info">以下のうち<b>3つ以上</b>達成できればまず負けない：<br>
+      <span class="good">✓ プレミアム乙女アタックor出陣の陣</span><br>
+      <span class="good">✓ 1日に覚醒3回</span><br>
+      <span class="good">✓ 青・緑で250以上のせる</span><br>
+      <span class="good">✓ ノブで500以上のせる</span><br>
+      <span class="good">✓ 1日にロック2段階8回</span>
+    </div>
+    <div class="info red"><span class="bad">⚠ AT中はヒキが全て。設定6でも噛み合わなければ負ける台。</span></div>
+  </div>
+  <div class="card">
+    <div class="card-line purple"></div>
+    <div class="sec">📋 チェックリスト</div>
+    <label class="ck"><input type="checkbox"> <span>打-WIN LITEを起動した</span></label>
+    <label class="ck"><input type="checkbox"> <span>AT終了画面を記録した</span></label>
+    <label class="ck"><input type="checkbox"> <span>ボーナスG数（30/40/50）を記録した</span></label>
+    <label class="ck"><input type="checkbox"> <span>AT直撃の有無を確認した</span></label>
+    <label class="ck"><input type="checkbox"> <span>エピソードボーナスキャラを記録した</span></label>
+    <label class="ck"><input type="checkbox"> <span>エンディング乙女トーク1人目確認</span></label>
+    <label class="ck"><input type="checkbox"> <span>スタンプ・獲得枚数表示を確認した</span></label>
+  </div>
+  <div class="disclaimer">※本アプリのデータは各種解析サイトの公開情報をもとに作成。確率は試行回数による偏りが生じるため参考程度にご利用ください。パチスロは遊技です。適度な範囲でお楽しみください。</div>
+</div>
+
+<!-- TAB NAV -->
+
+<nav class="tabnav">
+  <button class="tn act" onclick="showPage('pg-judge',this)"><div class="tn-ic">⚔</div><div class="tn-lb">判別</div></button>
+  <button class="tn" onclick="showPage('pg-zone',this)"><div class="tn-ic">🗺</div><div class="tn-lb">ゾーン</div></button>
+  <button class="tn" onclick="showPage('pg-spec',this)"><div class="tn-ic">📊</div><div class="tn-lb">スペック</div></button>
+  <button class="tn" onclick="showPage('pg-tips',this)"><div class="tn-ic">💡</div><div class="tn-lb">攻略</div></button>
+</nav>
+
+<script>
+const S={end:'none',stamp:'none',talk:'none',ep:'none',maisuu:'none',nagi:'none'};
+let parsedData={};
+let pasteOpen=false;
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('act'));
+  document.querySelectorAll('.tn').forEach(b=>b.classList.remove('act'));
+  document.getElementById(id).classList.add('act');
+  btn.classList.add('act');
+  window.scrollTo(0,0);
+}
+
+function togglePaste(){
+  pasteOpen=!pasteOpen;
+  document.getElementById('paste-area-wrap').classList.toggle('open',pasteOpen);
+  document.getElementById('paste-btn-txt').textContent=pasteOpen?'サイトセブン解析を閉じる':'サイトセブン貼り付け解析を開く';
+}
+
+function adj(id,delta){
+  const el=document.getElementById(id);
+  const v=parseInt(el.value)||0;
+  el.value=Math.max(id==='in-diff'?-99999:0, v+delta);
+}
+
+function chip(el,key){
+  el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  S[key]=el.getAttribute('data-v');
+}
+
+function parseSite7(){
+  const raw=document.getElementById('paste-inp').value;
+  if(!raw.trim()){alert('テキストが空です');return;}
+  const n=raw.replace(/[,，、]/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  function ex(pats){for(const p of pats){const m=n.match(p);if(m)return parseInt(m[1]);}return null;}
+  const totalG=ex([/(?:総|合計)?ゲ[ーー]?ム数[\s:：]*(\d+)/,/G数[\s:：]*(\d+)/,/総回転[\s:：]*(\d+)/,/スタート[\s:：]*(\d+)/,/(\d{3,5})\s*[Gg回]/]);
+  const hitBig=ex([/(?:BB|ビッグ|ボーナス)(?:回数|数)?[\s:：]*(\d+)/,/大当り[\s:：]*(\d+)/,/初当[りた][\s:：]*(\d+)/,/当選回数[\s:：]*(\d+)/]);
+  const hitAT=ex([/AT(?:回数|数)?[\s:：]*(\d+)/,/(?:RB|レギュラー)(?:回数|数)?[\s:：]*(\d+)/]);
+  const dr=n.match(/差枚[\s:：]*([+-]?\d+)/)||n.match(/([+-]\d{3,6})/);
+  const diff=dr?parseInt(dr[1]):null;
+  parsedData={totalG,hitBig,hitAT,diff};
+  const items=document.getElementById('parse-items');
+  items.innerHTML='';
+  [['総ゲーム数',totalG!=null?totalG+'G':'読取不可'],['ボーナス/当選',hitBig!=null?hitBig+'回':'読取不可'],['AT回数',hitAT!=null?hitAT+'回':'読取不可'],['差枚数',diff!=null?(diff>0?'+':'')+diff+'枚':'読取不可']].forEach(([k,v])=>{
+    const d=document.createElement('div');d.className='pi';
+    d.innerHTML=`<span class="pi-k">${k}</span><span class="pi-v">${v}</span>`;
+    items.appendChild(d);
+  });
+  document.getElementById('parse-result').style.display='block';
+}
+
+function applyParsed(){
+  if(parsedData.totalG!=null)document.getElementById('in-g').value=parsedData.totalG;
+  const th=(parsedData.hitBig||0)+(parsedData.hitAT||0);
+  if(th>0)document.getElementById('in-hit').value=th;
+  if(parsedData.diff!=null)document.getElementById('in-diff').value=parsedData.diff;
+  togglePaste();
+  window.scrollTo(0,0);
+}
+
+const THEORY=[272.7,267.3,255.3,238.2,223.2,217.1];
+const SCOL=['#484060','#5a5075','#9890b8','#c8922a','#e86020','#e0203a'];
+const SNAME=['設定1','設定2','設定3','設定4','設定5','設定6'];
+
+function judge(){
+  const g=parseFloat(document.getElementById('in-g').value)||0;
+  const hit=parseFloat(document.getElementById('in-hit').value)||0;
+  const choku=parseFloat(document.getElementById('in-choku').value)||0;
+  const diff=parseFloat(document.getElementById('in-diff').value)||0;
+  const zout=parseFloat(document.getElementById('in-zout').value)||0;
+  const b30=parseFloat(document.getElementById('in-b30').value)||0;
+  const b40=parseFloat(document.getElementById('in-b40').value)||0;
+  const b50=parseFloat(document.getElementById('in-b50').value)||0;
+
+  let w=[50,52,55,58,62,65];
+
+  if(g>0&&hit>0){
+    const a=g/hit;
+    for(let i=0;i<6;i++) w[i]+=Math.max(0,25-Math.abs(a-THEORY[i])*0.2);
+    if(a<220){w[5]+=18;w[4]+=12;}
+    else if(a<238){w[5]+=10;w[4]+=8;w[3]+=5;}
+    else if(a<255){w[3]+=8;w[2]+=5;}
+    else if(a>272){w[0]+=12;w[1]+=6;}
+  }
+  if(choku>=1&&g>0){
+    const r=g/choku;
+    if(r<5000){w[5]+=28;w[4]+=16;w[3]+=8;}
+    else if(r<7000){w[5]+=16;w[4]+=10;}
+    else{w[5]+=8;w[4]+=5;}
+    if(choku>=2){w[5]+=22;w[4]+=14;}
+    if(choku>=3){w[5]+=28;w[4]+=18;}
+  }
+  const tb=b30+b40+b50;
+  if(tb>0){
+    const r=(b40+b50)/tb;
+    if(r>0.55){w[4]+=14;w[5]+=14;w[3]+=10;}
+    else if(r>0.38){w[3]+=10;w[4]+=10;}
+    else if(r<0.12){w[0]+=14;w[1]+=8;}
+  }
+  w[3]+=zout*6;w[4]+=zout*8;w[5]+=zout*10;
+  if(g>1000){
+    if(diff>g*2.0){w[4]+=8;w[5]+=12;}
+    else if(diff<-g*0.5){w[0]+=8;w[1]+=5;}
+  }
+  const emap={
+    end:{def1:[3,0,3,0,3,0],def2:[0,3,0,3,0,3],hi_weak:[0,0,5,8,10,10],s5up:[-12,-12,-5,15,22,22],s6:[-30,-30,-20,-10,5,60]},
+    stamp:{yu:[-12,-12,-5,15,20,20],goku:[-30,-30,-20,-10,5,55]},
+    talk:{ougai:[0,0,0,10,22,40],nobunaga:[0,0,5,8,12,12],ieyasu:[0,0,5,8,12,12],ujimasa:[0,0,5,8,12,12]},
+    ep:{kansuke:[8,0,8,0,8,0],sourin:[0,8,0,8,0,8],ujimasa2:[0,0,15,0,15,0],hideaki:[0,0,0,15,0,15]},
+    maisuu:{'444':[-12,-12,-5,18,18,18],'666':[-30,-30,-20,-10,5,60]},
+    nagi:{hi:[0,0,5,8,12,12],s6:[-30,-30,-20,-10,5,60]},
+  };
+  for(const[key,val]of Object.entries(S)){
+    if(val!='none'&&emap[key]&&emap[key][val]) emap[key][val].forEach((v,i)=>{w[i]+=v;});
+  }
+  w=w.map(v=>Math.max(0,v));
+  const total=w.reduce((a,b)=>a+b,0);
+  const pcts=w.map(v=>Math.round(v/total*100));
+  pcts[5]+=(100-pcts.reduce((a,b)=>a+b,0));
+  const maxI=w.indexOf(Math.max(...w));
+  render(pcts,maxI);
+}
+
+function render(pcts,maxI){
+  const col=SCOL[maxI];
+  const pct=pcts[maxI];
+
+  // 設定番号ドーン
+  const numEl=document.getElementById('r-num');
+  numEl.textContent=maxI+1;
+  numEl.style.color=col;
+  numEl.style.textShadow=`0 0 40px ${col}80`;
+
+  document.getElementById('r-name').textContent=SNAME[maxI]+'が最有力';
+  document.getElementById('r-name').style.color=col;
+
+  const confEl=document.getElementById('r-conf');
+  confEl.textContent='信頼度 '+pct+'%';
+  confEl.style.background=col+'30';
+  confEl.style.color=col;
+  confEl.style.border=`1px solid ${col}`;
+
+  // バー
+  const barsEl=document.getElementById('r-bars');
+  barsEl.innerHTML='';
+  for(let i=0;i<6;i++){
+    const row=document.createElement('div');
+    row.className='sbar';
+    row.innerHTML=`
+      <div class="sbar-lbl" style="color:${SCOL[i]};${i===maxI?'font-size:16px':''}">${i+1}</div>
+      <div class="sbar-track">
+        <div class="sbar-fill" style="width:0%;background:linear-gradient(90deg,${SCOL[i]}60,${SCOL[i]})">
+          <span class="sbar-fill-txt">${i===maxI?'◀':''}</span>
+        </div>
+      </div>
+      <div class="sbar-pct" style="color:${SCOL[i]};${i===maxI?'font-weight:900;font-size:15px':''}">${pcts[i]}%</div>
+    `;
+    barsEl.appendChild(row);
+    setTimeout(()=>row.querySelector('.sbar-fill').style.width=pcts[i]+'%',50+i*60);
+  }
+
+  // アドバイス
+  let adv='';
+  if(maxI>=4) adv='🔥 高設定の強シグナルあり。示唆演出が高設定を指しています。終日続行を強く推奨。エンディングが来たら必ず続行。';
+  else if(maxI>=2) adv='🔶 中間設定の可能性。エピソードキャラや打-WIN LITEの示唆を継続チェックしてから最終判断を。';
+  else adv='⚠ 低設定の可能性が高い。天井狙い（スルー回数重視）か別台の選択を検討。深追いは禁物。';
+  document.getElementById('r-advice').textContent=adv;
+
+  const wrap=document.getElementById('result-wrap');
+  wrap.style.display='block';
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetAll(){
+  ['in-g','in-hit','in-choku','in-diff','in-zout','in-b30','in-b40','in-b50'].forEach(id=>{
+    document.getElementById(id).value='0';
+  });
+  document.querySelectorAll('.chips .chip').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('.chips [data-v="none"]').forEach(c=>c.classList.add('on'));
+  Object.keys(S).forEach(k=>S[k]='none');
+  document.getElementById('result-wrap').style.display='none';
+  document.getElementById('parse-result').style.display='none';
+  document.getElementById('paste-inp').value='';
+}
+
+// init
+document.querySelectorAll('.chips [data-v="none"]').forEach(c=>c.classList.add('on'));
+</script>
+
+</body>
+</html>
