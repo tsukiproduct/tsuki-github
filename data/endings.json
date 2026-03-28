@@ -1,0 +1,41 @@
+{
+  "_note": "このファイルはリファレンス用です。実際のデータはjs/story.jsのTTY.ENDINGSに定義されています。",
+  "endings": [
+    {
+      "id": "A", "title": "ENDING A — システム停止",
+      "condition": "discoveredClues >= 7 && yamadaFollowed && signatureFound",
+      "description": "解呪ルート。全ての手がかりを集め、山田老をフォローし、九十九の署名を発見する。",
+      "bgAnimation": "whiten", "canReplay": true
+    },
+    {
+      "id": "B", "title": "ENDING B — 村人の一人へ",
+      "condition": "infectedCount >= 9",
+      "description": "感染拡大ルート。9人以上に感染させる（フォロー誘導で住民を感染）。",
+      "bgAnimation": "darken", "canReplay": true
+    },
+    {
+      "id": "C", "title": "ENDING C — 石方に溶ける",
+      "condition": "gameDaysUntilDeath <= 0",
+      "description": "デフォルトBADエンド。カウントダウンがゼロになった時。",
+      "bgAnimation": "darken", "canReplay": true
+    },
+    {
+      "id": "D", "title": "ENDING D — 伝道師",
+      "condition": "sharedToExternal === true",
+      "description": "隠しルート。ゲーム内シェアボタンを使って外部にシェアする。",
+      "bgAnimation": "expand", "canReplay": true
+    },
+    {
+      "id": "E", "title": "ENDING E — 九十九の意志を継ぐ",
+      "condition": "discoveredClues.length >= 10 && revealedTruth === true",
+      "description": "真エンディング。全10件の手がかりを発見し、真相フラグを立てる。YES/NO選択あり。",
+      "bgAnimation": "scatter", "canReplay": false
+    },
+    {
+      "id": "F", "title": "ENDING F — 放棄された街",
+      "condition": "(Date.now() - lastActiveTimestamp) > 72時間",
+      "description": "虚無ルート。感染後72時間（3日間）ゲームを起動しなかった場合。",
+      "bgAnimation": "none", "canReplay": true
+    }
+  ]
+}

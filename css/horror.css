@@ -1,0 +1,257 @@
+/* ============================================================
+ * horror.css — ホラー演出エフェクト
+ * ============================================================ */
+
+/* ── ビネット（周囲暗化）── */
+#overlay-vignette {
+  position: fixed; inset: 0; z-index: 10;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 70% at 50% 50%,
+    transparent 40%,
+    rgba(var(--vignette-r), var(--vignette-g), var(--vignette-b), var(--vignette-opacity)) 100%
+  );
+  transition: background 2s ease;
+}
+
+/* ── グリッチオーバーレイ ── */
+#overlay-glitch {
+  position: fixed; inset: 0; z-index: 900;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+}
+#overlay-glitch.active {
+  animation: glitchOverlay 0.15s steps(1) infinite;
+}
+
+/* ── 暗転オーバーレイ ── */
+#overlay-blackout {
+  position: fixed; inset: 0; z-index: 950;
+  background: #000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 3s ease;
+}
+#overlay-blackout.fading { opacity: 1; pointer-events: all; }
+#overlay-blackout.white { background: #fff; }
+
+/* ── スキャンライン（Phase2以降）── */
+body.phase-2::after, body.phase-3::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 5;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.04) 3px,
+    rgba(0,0,0,0.04) 4px
+  );
+}
+
+/* ── グリッチテキスト ── */
+.glitch {
+  position: relative;
+  animation: glitchText 4s infinite;
+}
+.glitch::before, .glitch::after {
+  content: attr(data-text);
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+.glitch::before {
+  color: #ff00c8;
+  animation: glitchBefore 3s infinite steps(1);
+}
+.glitch::after {
+  color: #00fff9;
+  animation: glitchAfter 3s infinite steps(1);
+}
+
+/* ── ヘッダーロゴグリッチ（Phase2）── */
+body.phase-2 .header-logo, body.phase-3 .header-logo {
+  animation: logoGlitch 6s infinite;
+}
+
+/* ── テキスト文字化け ── */
+.corrupted-text {
+  position: relative;
+  color: var(--clr-horror-bright) !important;
+  font-family: var(--font-mono) !important;
+}
+.corrupted-text::after {
+  content: attr(data-corrupt);
+  position: absolute; left: 0; top: 0;
+  color: rgba(255,0,200,0.5);
+  clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%);
+  transform: translateX(-2px);
+  animation: corruptSlice 2s infinite steps(1);
+}
+
+/* ── 幽霊投稿（フェードイン）── */
+.ghost-appear {
+  animation: ghostFadeIn 2s ease forwards;
+}
+
+/* ── カウントダウン点滅 ── */
+.countdown-flicker {
+  animation: countFlicker 1.5s ease-in-out infinite;
+}
+body.phase-3 .header-countdown {
+  animation: countFlicker 0.8s ease-in-out infinite;
+}
+
+/* ── 血のドリップ風ボーダー ── */
+body.phase-3 #main-header {
+  border-bottom-color: var(--clr-horror);
+  box-shadow: 0 2px 12px rgba(180,15,15,0.3);
+}
+
+/* ── 投稿欄呪い化（Phase2以降）── */
+body.phase-2 #post-input::placeholder,
+body.phase-3 #post-input::placeholder {
+  color: rgba(180,26,26,0.5);
+  font-family: var(--font-mono);
+}
+body.phase-3 #post-input {
+  border-color: rgba(180,26,26,0.3);
+  background: rgba(20,8,8,0.8);
+}
+
+/* ── 感染警告ボーダー ── */
+.infected-border {
+  border-color: var(--clr-horror) !important;
+  box-shadow: 0 0 8px rgba(138,26,26,0.4) !important;
+}
+
+/* ── Phase別サイドバー変化 ── */
+body.phase-2 #sidebar-left,
+body.phase-3 #sidebar-left {
+  border-right-color: rgba(138,26,26,0.2);
+}
+body.phase-3 .profile-avatar {
+  border-color: var(--clr-horror);
+  box-shadow: 0 0 12px rgba(138,26,26,0.4);
+}
+
+/* ── エンティティ投稿特殊スタイル ── */
+.post-card.entity .post-content {
+  color: rgba(200,160,220,0.85);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+.post-card.entity .post-avatar {
+  background: #1a0a2a;
+  border-color: #7a1a8a;
+  color: rgba(200,160,220,0.7);
+}
+
+/* ── プレイヤー改ざん投稿 ── */
+.post-card.player-corrupted .post-author-name {
+  color: var(--clr-horror-bright);
+}
+.post-card.player-corrupted .post-content {
+  color: var(--clr-horror-bright);
+  font-family: var(--font-mono);
+}
+.post-card.player-corrupted::before {
+  content: '⚠ あなたの投稿';
+  font-size: 10px; color: var(--clr-horror);
+  position: absolute; top: 6px; right: 8px;
+  font-family: var(--font-mono);
+}
+
+/* ── 幽霊アカウント ── */
+.ghost-account .post-author-name { color: var(--clr-ghost-text) !important; }
+.ghost-account .post-content { color: var(--clr-ghost-text); }
+.ghost-account .post-avatar { background: transparent; border-color: rgba(180,180,220,0.2); }
+
+/* ── モバイル感染バー点滅 ── */
+body.phase-3 .mobile-infection-bar {
+  animation: mobileBarFlicker 1s ease-in-out infinite;
+}
+
+/* ── Phase3 スクリーン全体の軽いちらつき ── */
+body.phase-3 #feed-container {
+  animation: screenFlicker 8s ease-in-out infinite;
+}
+
+/* ── エンディング演出クラス ── */
+.ending-whiten { animation: endingWhiten 4s ease forwards; }
+.ending-darken { animation: endingDarken 5s ease forwards; }
+.ending-scatter { animation: endingScatter 0.5s steps(1) infinite; }
+
+/* キーフレーム定義 */
+@keyframes glitchOverlay {
+  0%   { opacity: 0; }
+  10%  { opacity: 0.8; transform: skew(0.5deg); }
+  20%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes glitchText {
+  0%, 90%, 100% { transform: translate(0); }
+  92% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); }
+  94% { transform: translate(2px, -1px); }
+  96% { transform: translate(0); }
+}
+@keyframes glitchBefore {
+  0%, 89%, 100% { clip-path: none; transform: translate(0); }
+  90% { clip-path: polygon(0 10%, 100% 10%, 100% 30%, 0 30%); transform: translate(-3px, 0); }
+  95% { clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%); transform: translate(3px, 0); }
+}
+@keyframes glitchAfter {
+  0%, 91%, 100% { clip-path: none; transform: translate(0); }
+  92% { clip-path: polygon(0 40%, 100% 40%, 100% 55%, 0 55%); transform: translate(3px, 0); }
+  97% { clip-path: polygon(0 75%, 100% 75%, 100% 90%, 0 90%); transform: translate(-2px, 0); }
+}
+@keyframes logoGlitch {
+  0%, 95%, 100% { text-shadow: none; }
+  96% { text-shadow: 2px 0 #ff00c8, -2px 0 #00fff9; letter-spacing: 0.15em; }
+  97% { text-shadow: -3px 0 #ff00c8; letter-spacing: 0.08em; }
+  98% { text-shadow: 3px 0 #00fff9; letter-spacing: 0.18em; }
+}
+@keyframes corruptSlice {
+  0%, 100% { clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%); }
+  50% { clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%); }
+}
+@keyframes ghostFadeIn {
+  from { opacity: 0; transform: translateY(-8px); filter: blur(3px); }
+  60%  { opacity: 0.4; }
+  to   { opacity: 0.55; transform: translateY(0); filter: blur(0); }
+}
+@keyframes countFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+@keyframes mobileBarFlicker {
+  0%, 100% { opacity: 1; background: rgba(138,26,26,0.15); }
+  50% { opacity: 0.6; background: rgba(180,20,20,0.3); }
+}
+@keyframes screenFlicker {
+  0%, 100% { filter: brightness(1); }
+  96% { filter: brightness(0.92); }
+  97% { filter: brightness(1.05); }
+  98% { filter: brightness(0.95); }
+}
+@keyframes endingWhiten {
+  0% { filter: brightness(1) saturate(1); }
+  100% { filter: brightness(5) saturate(0); }
+}
+@keyframes endingDarken {
+  0% { filter: brightness(1); }
+  100% { filter: brightness(0); }
+}
+@keyframes endingScatter {
+  0% { letter-spacing: 0.02em; color: var(--clr-text); }
+  25% { letter-spacing: 0.3em; color: rgba(255,255,255,0.5); }
+  50% { letter-spacing: -0.05em; color: var(--clr-horror-bright); }
+  75% { letter-spacing: 0.1em; color: var(--clr-text-muted); }
+}

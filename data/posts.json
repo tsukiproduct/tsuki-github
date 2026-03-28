@@ -1,0 +1,44 @@
+{
+  "_note": "このファイルはリファレンス用です。実際のデータはjs/story.jsのTTY.POSTSに定義されています（100件）。",
+  "_summary": {
+    "total": 100,
+    "phase0_normal": 50,
+    "phase0_cursed_trigger": 10,
+    "phase1_post_infection": 25,
+    "phase2_deep_horror": 15,
+    "ghost_posts": 5,
+    "corrupted_player_posts": 3,
+    "entity_posts": 3
+  },
+  "_infection_triggers": {
+    "p019": "連続いいね誘導（鈴木太郎）",
+    "p027": "呪いスタンプ紹介（伊藤健一）",
+    "p010": "深夜DM誘導（佐藤恵）",
+    "p030": "深夜DM誘導（佐藤恵2）",
+    "p036": "深夜DM誘導（井上奈々）",
+    "p055": "感染トリガー投稿（佐藤恵）",
+    "p068": "感染トリガー投稿（佐藤恵）"
+  },
+  "_clue_posts": {
+    "p015": "clue_ishiokuri — 石送りの習わし",
+    "p028": "clue_cannot_leave — 出て行けない者たちの記録",
+    "p029": "clue_old_sign — TTY運営事務局の看板",
+    "p035": "clue_population — 石方市の人口推移異常",
+    "p039": "clue_tsukumo — 九十九太助という名前",
+    "p045": "clue_hospital — 「外に出られない」患者の増加",
+    "p048": "clue_1999 — 1999年のシステム障害",
+    "p057": "clue_sign2 — 倉庫に保管された看板の意味",
+    "p059": "clue_monument — 地下の石碑「九十九」",
+    "p061": "clue_1999b — デジタル市民ネットワーク記録",
+    "p065": "clue_letter — 山田老の手紙",
+    "p066": "clue_ishikata_seal — 石方封じの民俗習慣",
+    "p072": "clue_server — TTYサーバーパーツ発見",
+    "p084": "clue_server2 — サーバーの在処",
+    "p091": "clue_howto — サーバーを止める方法（山田老フォロー必須）",
+    "p095": "clue_truth1 — 九十九の遺言 其の一",
+    "p096": "clue_truth2 — 九十九の遺言 其の二",
+    "p099": "clue_truth3 — 九十九の遺言 其の三",
+    "p100": "clue_tsukumo_final — 最後のメッセージ"
+  },
+  "_hidden_signature": "全100件の投稿末尾に「。」が付いている（九十九太助の隠し署名）。これに気づくとsignatureFoundフラグが立つ。"
+}

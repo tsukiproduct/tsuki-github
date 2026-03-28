@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="description" content="石方市民ネットワーク — あなたの声を、誰かに届けよう">
+  <!-- Content-Security-Policy: default-src 'self'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'none' -->
+  <title>TTY - Talk To You</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/horror.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body class="phase-0">
+
+  <!-- ══════════════════════════════════════════════
+       SCREEN: TITLE / 登録
+  ══════════════════════════════════════════════ -->
+  <div id="screen-title" class="screen active">
+    <div class="title-bg"></div>
+    <div class="title-container">
+      <div class="title-logo">
+        <span class="title-logo-text">TTY</span>
+        <span class="title-logo-sub">Talk To You</span>
+      </div>
+      <p class="title-tagline">石方市民ネットワーク — あなたの声を、誰かに届けよう</p>
+      <div class="title-form">
+        <h2 class="title-form-heading">新規登録</h2>
+        <div class="form-group">
+          <label for="input-name">お名前</label>
+          <input type="text" id="input-name" placeholder="例: 田中 花子" maxlength="20" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="input-handle">ハンドルネーム（@）</label>
+          <input type="text" id="input-handle" placeholder="例: tanaka_hanako" maxlength="20" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="input-bio">自己紹介 <span class="text-faint text-xs">（任意）</span></label>
+          <textarea id="input-bio" placeholder="石方市に引越してきました！よろしくお願いします🏠" maxlength="100" rows="2"></textarea>
+        </div>
+        <button id="btn-register" class="btn-primary">石方市民になる</button>
+        <p class="title-note">
+          TTYに登録することで、石方市民ネットワーク利用規約に同意したものとみなします。
+          <span class="title-note-small">（お引越し後の脱退はできかねます）</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       SCREEN: MAIN (SNS フィード)
+  ══════════════════════════════════════════════ -->
+  <div id="screen-main" class="screen">
+
+    <!-- ─── ヘッダー ─── -->
+    <header id="main-header">
+      <div class="header-inner">
+        <button id="btn-drawer-open" class="header-btn drawer-btn" aria-label="メニューを開く">
+          <span class="hamburger">☰</span>
+        </button>
+        <div class="header-logo-wrap">
+          <span class="header-logo">TTY</span>
+          <span class="logo-sub">Talk To You</span>
+        </div>
+        <div class="header-date" id="header-date">Day 1</div>
+        <div class="header-user" id="header-user">@——</div>
+        <div id="header-countdown" class="header-countdown hidden" aria-live="polite">
+          <span class="countdown-label">あと</span>
+          <span id="countdown-days" class="countdown-num">9</span>
+          <span class="countdown-label">日</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ─── モバイル感染バー ─── -->
+    <div id="mobile-infection-bar" class="mobile-infection-bar hidden" aria-live="polite">
+      <span id="mobile-infection-text">あなたはまだここにいる</span>
+    </div>
+
+    <!-- ─── 3カラムレイアウト ─── -->
+    <div id="main-layout">
+
+      <!-- ── 左サイドバー ── -->
+      <aside id="sidebar-left" aria-label="プロフィールとナビゲーション">
+
+        <!-- プロフィールカード -->
+        <div class="sidebar-card profile-card" id="profile-card">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div class="profile-avatar" id="profile-avatar" aria-hidden="true">?</div>
+            <div class="profile-info">
+              <div class="profile-name" id="profile-name">——</div>
+              <div class="profile-handle" id="profile-handle">@——</div>
+            </div>
+          </div>
+          <div class="profile-bio" id="profile-bio"></div>
+          <div class="profile-stats">
+            <div class="stat"><span class="stat-num" id="stat-posts">0</span><span class="stat-label">投稿</span></div>
+            <div class="stat"><span class="stat-num" id="stat-followers">0</span><span class="stat-label">フォロワー</span></div>
+            <div class="stat"><span class="stat-num" id="stat-following">0</span><span class="stat-label">フォロー</span></div>
+          </div>
+          <!-- 感染バー（感染後に表示） -->
+          <div id="infection-bar-container" class="infection-bar-container hidden">
+            <div class="infection-bar-label">
+              <span>感染状態</span>
+              <span id="infection-percent">0%</span>
+            </div>
+            <div class="infection-bar-track">
+              <div id="infection-bar-fill" class="infection-bar-fill" style="width:0%"></div>
+            </div>
+            <div id="infection-phase-label" class="infection-phase-label">正常</div>
+          </div>
+        </div>
+
+        <!-- ナビゲーション -->
+        <nav class="sidebar-nav" aria-label="メインナビゲーション">
+          <button class="nav-btn active" data-screen="feed">
+            <span class="nav-icon" aria-hidden="true">◈</span>
+            <span>タイムライン</span>
+          </button>
+          <button class="nav-btn" data-screen="notifications">
+            <span class="nav-icon" aria-hidden="true">◉</span>
+            <span>通知</span>
+            <span class="badge hidden" id="notif-badge" aria-label="未読通知">0</span>
+          </button>
+          <button class="nav-btn" data-screen="dm" id="nav-dm">
+            <span class="nav-icon" aria-hidden="true">✉</span>
+            <span>DM</span>
+            <span class="badge hidden" id="dm-badge" aria-label="未読DM">0</span>
+          </button>
+        </nav>
+
+      </aside>
+
+      <!-- ── メインフィード ── -->
+      <main id="feed-container" aria-label="タイムライン">
+
+        <!-- 投稿フォーム（PC） -->
+        <div class="post-form-card" id="post-form-card">
+          <div class="post-form-avatar profile-avatar" id="post-form-avatar" aria-hidden="true">?</div>
+          <div class="post-form-body">
+            <textarea id="post-input"
+              placeholder="いまどうしてる？石方市のみなさんに教えよう！"
+              maxlength="140" rows="3"
+              aria-label="投稿テキスト入力"></textarea>
+            <div class="post-form-footer">
+              <div class="stamp-row" id="stamp-row" aria-label="スタンプを選ぶ">
+                <button class="stamp-btn" data-stamp="😊" title="😊">😊</button>
+                <button class="stamp-btn" data-stamp="👋" title="👋">👋</button>
+                <button class="stamp-btn" data-stamp="🏠" title="🏠">🏠</button>
+                <button class="stamp-btn" data-stamp="🌸" title="🌸">🌸</button>
+                <button class="stamp-btn" data-stamp="☀️" title="☀️">☀️</button>
+                <button class="stamp-btn cursed-stamp" data-stamp="🌙" title="🌙">🌙</button>
+                <button class="stamp-btn cursed-stamp" data-stamp="⛩" title="⛩">⛩</button>
+                <button class="stamp-btn cursed-stamp" data-stamp="💀" title="💀">💀</button>
+                <button class="stamp-btn cursed-stamp" data-stamp="🕯" title="🕯">🕯</button>
+                <button class="stamp-btn cursed-stamp" data-stamp="🪦" title="🪦">🪦</button>
+              </div>
+              <div class="post-form-actions">
+                <span class="char-count" id="char-count" aria-live="polite">0/140</span>
+                <button id="btn-post-submit" class="btn-primary btn-sm">投稿する</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- タイムライン -->
+        <div id="timeline" class="timeline" role="feed" aria-label="投稿タイムライン">
+          <div id="posts-container"></div>
+          <div id="timeline-loader" class="timeline-loader hidden" aria-hidden="true">
+            <span class="loader-dot"></span>
+            <span class="loader-dot"></span>
+            <span class="loader-dot"></span>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- ── 右サイドバー ── -->
+      <aside id="sidebar-right" aria-label="トレンドと提案">
+
+        <!-- トレンド -->
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">トレンド</h3>
+          <div id="trending-list" class="trending-list"></div>
+        </div>
+
+        <!-- おすすめ住民 -->
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">おすすめ住民</h3>
+          <div id="suggested-residents" class="suggested-list"></div>
+        </div>
+
+        <!-- お知らせ -->
+        <div class="sidebar-card notice-card" id="system-notice">
+          <h3 class="sidebar-card-title">石方市からのお知らせ</h3>
+          <div id="notice-content" class="notice-content">
+            <p style="font-size:13px;color:var(--clr-text-muted);line-height:1.7;">
+              石方市民ネットワーク「TTY」へようこそ。<br>
+              ご近所のみなさんと気軽に交流しましょう。
+            </p>
+          </div>
+        </div>
+
+      </aside>
+    </div><!-- /#main-layout -->
+
+    <!-- ─── 通知パネル ─── -->
+    <div id="notifications-panel" class="panel hidden" role="dialog" aria-label="通知">
+      <div class="panel-header">
+        <h2>通知</h2>
+        <button class="panel-close" data-panel="notifications" aria-label="閉じる">✕</button>
+      </div>
+      <div id="notifications-list" class="notifications-list"></div>
+    </div>
+
+  </div><!-- /#screen-main -->
+
+
+  <!-- ══════════════════════════════════════════════
+       SCREEN: ENDING
+  ══════════════════════════════════════════════ -->
+  <div id="screen-ending" class="screen">
+    <div id="ending-container" class="ending-container">
+      <div id="ending-badge" class="ending-badge" aria-hidden="true"></div>
+      <h1 id="ending-title" class="ending-title"></h1>
+      <div id="ending-text" class="ending-text"></div>
+      <div id="ending-actions" class="ending-actions">
+        <button id="btn-replay" class="btn-primary">もう一度プレイする</button>
+        <button id="btn-share-ending" class="btn-secondary">シェアする</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       ドロワー（モバイル・タブレット）
+  ══════════════════════════════════════════════ -->
+  <div id="drawer-overlay" class="drawer-overlay hidden" aria-hidden="true"></div>
+  <div id="drawer" class="drawer" role="dialog" aria-label="メニュー" aria-hidden="true">
+    <div class="drawer-profile">
+      <div class="profile-avatar lg" id="drawer-avatar" aria-hidden="true">?</div>
+      <div class="profile-name" id="drawer-name">——</div>
+      <div class="profile-handle" id="drawer-handle">@——</div>
+      <div id="drawer-infection-bar" class="infection-bar-container hidden">
+        <div class="infection-bar-track">
+          <div id="drawer-infection-fill" class="infection-bar-fill" style="width:0%"></div>
+        </div>
+        <div id="drawer-infection-label" class="infection-phase-label">正常</div>
+      </div>
+    </div>
+    <nav class="drawer-nav" aria-label="ドロワーナビゲーション">
+      <button class="nav-btn" data-screen="feed">
+        <span class="nav-icon" aria-hidden="true">◈</span> タイムライン
+      </button>
+      <button class="nav-btn" data-screen="notifications">
+        <span class="nav-icon" aria-hidden="true">◉</span> 通知
+      </button>
+      <button class="nav-btn" data-screen="dm">
+        <span class="nav-icon" aria-hidden="true">✉</span> DM
+      </button>
+    </nav>
+    <div class="drawer-residents">
+      <h4>フォロー中の住民</h4>
+      <div id="drawer-following-list"></div>
+    </div>
+    <button id="btn-drawer-close" class="drawer-close" aria-label="ドロワーを閉じる">✕ 閉じる</button>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       DMパネル
+  ══════════════════════════════════════════════ -->
+  <div id="dm-panel" class="dm-panel hidden" role="dialog" aria-label="ダイレクトメッセージ">
+    <div class="dm-header">
+      <button id="btn-dm-back" class="dm-back-btn" aria-label="戻る">← 戻る</button>
+      <div class="dm-header-info">
+        <span id="dm-partner-name" class="dm-partner-name">——</span>
+        <span id="dm-partner-handle" class="dm-partner-handle">@——</span>
+      </div>
+      <span id="dm-partner-status" class="dm-status" aria-live="polite">オンライン</span>
+    </div>
+    <!-- DM 住民リスト -->
+    <div id="dm-resident-list" class="dm-resident-list">
+      <div class="dm-list-header">DMを送る相手を選んでください</div>
+      <div id="dm-resident-items"></div>
+    </div>
+    <!-- DM 会話エリア -->
+    <div id="dm-messages" class="dm-messages" aria-live="polite" aria-label="メッセージ一覧"></div>
+    <!-- DM 入力 -->
+    <div class="dm-input-wrap">
+      <input type="text" id="dm-input"
+        placeholder="メッセージを入力…（Enterで送信）"
+        maxlength="100" autocomplete="off"
+        aria-label="メッセージ入力">
+      <button id="btn-dm-send" class="btn-primary btn-sm">送信</button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       モーダル
+  ══════════════════════════════════════════════ -->
+
+  <!-- 感染警告 -->
+  <div id="modal-infection" class="modal hidden" role="alertdialog" aria-modal="true" aria-labelledby="modal-infection-title">
+    <div class="modal-content infection-modal">
+      <div class="modal-icon" aria-hidden="true">⚠</div>
+      <h2 id="modal-infection-title" class="modal-title">異常を検出しました</h2>
+      <p id="modal-infection-body" class="modal-body">——</p>
+      <p class="modal-note text-mono">石方市民ネットワーク — システムアラート</p>
+      <button id="btn-modal-infection-close" class="btn-primary">確認しました</button>
+    </div>
+  </div>
+
+  <!-- 住民プロフィール -->
+  <div id="modal-profile" class="modal hidden" role="dialog" aria-modal="true" aria-label="住民プロフィール">
+    <div class="modal-content profile-modal-content">
+      <button class="modal-close-btn" id="btn-profile-modal-close" aria-label="閉じる" style="position:absolute;top:12px;right:12px;">✕</button>
+      <div class="resident-profile-header">
+        <div class="profile-avatar lg" id="modal-profile-avatar" aria-hidden="true">?</div>
+        <div>
+          <div class="profile-name lg" id="modal-profile-name">——</div>
+          <div class="profile-handle" id="modal-profile-handle">@——</div>
+        </div>
+      </div>
+      <p id="modal-profile-bio" class="modal-profile-bio">——</p>
+      <div class="modal-profile-meta">
+        <span id="modal-profile-residence">石方市 在住</span>
+        <span id="modal-profile-status" class="status-badge">● オンライン</span>
+      </div>
+      <div class="modal-profile-actions">
+        <button id="btn-modal-follow" class="btn-primary btn-sm">フォローする</button>
+        <button id="btn-modal-dm" class="btn-secondary btn-sm">DM を送る</button>
+      </div>
+      <div id="modal-profile-posts" class="modal-profile-posts"></div>
+    </div>
+  </div>
+
+  <!-- 手がかり発見 -->
+  <div id="modal-clue" class="modal hidden" role="dialog" aria-modal="true" aria-label="手がかり発見">
+    <div class="modal-content clue-modal">
+      <div class="modal-icon clue-icon" aria-hidden="true">🔍</div>
+      <h2 class="modal-title">手がかりを発見</h2>
+      <p id="modal-clue-text" class="modal-body">——</p>
+      <div id="modal-clue-fragment" class="clue-fragment" aria-label="断片テキスト"></div>
+      <button id="btn-clue-close" class="btn-primary">記録する</button>
+    </div>
+  </div>
+
+  <!-- モバイル投稿モーダル -->
+  <div id="modal-post" class="modal hidden" role="dialog" aria-modal="true" aria-label="新規投稿">
+    <div class="modal-content" style="height:100svh;max-height:100svh;border-radius:0;max-width:100%;display:flex;flex-direction:column;padding:0;">
+      <div class="modal-header" style="padding:16px;border-bottom:1px solid var(--clr-border);">
+        <h2 style="font-size:16px;">投稿</h2>
+        <button id="btn-post-modal-close" style="font-size:14px;color:var(--clr-text-muted);padding:8px;" aria-label="キャンセル">✕ キャンセル</button>
+      </div>
+      <div style="padding:16px;flex:1;display:flex;flex-direction:column;gap:12px;overflow-y:auto;">
+        <textarea id="post-input-mobile"
+          placeholder="いまどうしてる？"
+          maxlength="140" rows="5"
+          style="flex:1;min-height:120px;"
+          aria-label="投稿テキスト入力"></textarea>
+        <div id="stamp-row-mobile" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="char-count" id="char-count-mobile" aria-live="polite">0/140</span>
+          <button id="btn-post-submit-mobile" class="btn-primary">投稿する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       オーバーレイエフェクト
+  ══════════════════════════════════════════════ -->
+  <div id="overlay-vignette" class="overlay-vignette" aria-hidden="true"></div>
+  <div id="overlay-glitch" class="overlay-glitch hidden" aria-hidden="true"></div>
+  <div id="overlay-blackout" class="overlay-blackout hidden" aria-hidden="true"></div>
+
+
+  <!-- ══════════════════════════════════════════════
+       トーストコンテナ
+  ══════════════════════════════════════════════ -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+
+  <!-- ══════════════════════════════════════════════
+       デバッグパネル（?debug=1 で表示）
+  ══════════════════════════════════════════════ -->
+  <div id="debug-panel" class="debug-panel hidden" role="complementary" aria-label="デバッグパネル">
+    <h4>🔧 Debug Mode</h4>
+    <button onclick="window.DEBUG?.setPhase(0)">Phase 0</button>
+    <button onclick="window.DEBUG?.setPhase(1)">Phase 1</button>
+    <button onclick="window.DEBUG?.setPhase(2)">Phase 2</button>
+    <button onclick="window.DEBUG?.setPhase(3)">Phase 3</button>
+    <hr style="border-color:#333;margin:4px 0;">
+    <button onclick="window.DEBUG?.triggerEnding('A')">End A</button>
+    <button onclick="window.DEBUG?.triggerEnding('B')">End B</button>
+    <button onclick="window.DEBUG?.triggerEnding('C')">End C</button>
+    <button onclick="window.DEBUG?.triggerEnding('D')">End D</button>
+    <button onclick="window.DEBUG?.triggerEnding('E')">End E</button>
+    <button onclick="window.DEBUG?.triggerEnding('F')">End F</button>
+    <hr style="border-color:#333;margin:4px 0;">
+    <button onclick="window.DEBUG?.addAllClues()">全手がかり</button>
+    <button onclick="window.DEBUG?.logState()">State Log</button>
+    <button onclick="window.DEBUG?.resetGame()" style="border-color:#ff4444;color:#ff4444;">Reset</button>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       モバイルボトムナビゲーション
+  ══════════════════════════════════════════════ -->
+  <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="ボトムナビゲーション">
+    <button class="bottom-nav-btn active" data-screen="feed" aria-label="ホーム">
+      <span class="bnav-icon" aria-hidden="true">◈</span>
+      <span class="bnav-label">ホーム</span>
+    </button>
+    <button class="bottom-nav-btn" data-screen="notifications" aria-label="通知">
+      <span class="bnav-icon" aria-hidden="true">◉</span>
+      <span class="bnav-label">通知</span>
+      <span class="bnav-badge hidden" id="bnav-notif-badge" aria-label="未読通知数">0</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-post-btn" aria-label="投稿する">
+      <span class="bnav-icon" aria-hidden="true">✎</span>
+      <span class="bnav-label">投稿</span>
+    </button>
+    <button class="bottom-nav-btn" data-screen="dm" aria-label="DM">
+      <span class="bnav-icon" aria-hidden="true">✉</span>
+      <span class="bnav-label">DM</span>
+      <span class="bnav-badge hidden" id="bnav-dm-badge" aria-label="未読DM数">0</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-menu-btn" aria-label="メニュー">
+      <span class="bnav-icon" aria-hidden="true">≡</span>
+      <span class="bnav-label">メニュー</span>
+    </button>
+  </nav>
+
+
+  <!-- ══════════════════════════════════════════════
+       スクリプト（読込順序重要）
+  ══════════════════════════════════════════════ -->
+  <script src="js/state.js"></script>
+  <script src="js/story.js"></script>
+  <script src="js/infection.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/meta.js"></script>
+  <script src="js/dm.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>

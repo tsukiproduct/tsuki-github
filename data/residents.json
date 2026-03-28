@@ -1,0 +1,25 @@
+{
+  "_note": "このファイルはリファレンス用です。実際のデータはjs/story.jsに埋め込まれています。",
+  "residents": [
+    { "id": "sato_megumi", "displayName": "佐藤 恵", "type": "infected", "role": "最初の感染源。プレイヤーを石方市に馴染ませる役。感染者を増やすことで自分の寿命を延ばしている。" },
+    { "id": "takahashi_rei", "displayName": "高橋 零", "type": "infected_terminal", "role": "Day3に死亡済み。アカウントが自律稼働している。" },
+    { "id": "yamada_rou", "displayName": "山田 老", "type": "special", "role": "真実を知る唯一の人物。フォローすると隠し投稿・DM解禁。九十九太助の唯一の友人。" },
+    { "id": "shimizu_asako", "displayName": "清水 朝子", "type": "normal", "role": "日常の違和感を語るキャラ。" },
+    { "id": "ito_kenichi", "displayName": "伊藤 健一", "type": "normal", "role": "「出て行けない」感覚を語る。感染スタンプを紹介するトリガー投稿あり。" },
+    { "id": "nakamura_yuki", "displayName": "中村 結", "type": "normal", "role": "カフェ店主。地域のハブ。" },
+    { "id": "suzuki_taro", "displayName": "鈴木 太郎", "type": "normal", "role": "連続いいね誘導投稿あり。" },
+    { "id": "kobayashi_mika", "displayName": "小林 美佳", "type": "normal", "role": "主婦。家族視点での石方市への依存を描写。" },
+    { "id": "watanabe_jin", "displayName": "渡辺 仁", "type": "normal", "role": "市役所職員。人口データや1999年記録を発見する手がかり担当。" },
+    { "id": "yamamoto_sachi", "displayName": "山本 幸", "type": "normal", "role": "教師。子どもたちの視点から石方の異常を描写。" },
+    { "id": "tanaka_ryoji", "displayName": "田中 亮二", "type": "normal", "role": "金物屋主人。TTY看板発見の手がかり担当。" },
+    { "id": "inoue_nana", "displayName": "井上 奈々", "type": "normal", "role": "大学生。若者視点。深夜DM誘導投稿あり。" },
+    { "id": "kimura_reiko", "displayName": "木村 麗子", "type": "infected", "role": "看護師。病院での異変を報告。" },
+    { "id": "hayashi_masaru", "displayName": "林 勝", "type": "normal", "role": "建設業。地下サーバーパーツ発見の手がかり担当。" },
+    { "id": "ogawa_miku", "displayName": "小川 美久", "type": "normal", "role": "フリーランスライター。石方の歴史調査。" },
+    { "id": "matsumoto_akira", "displayName": "松本 明", "type": "normal", "role": "転勤族。「出られない」感覚を描写。" },
+    { "id": "kato_haruka", "displayName": "加藤 遥", "type": "normal", "role": "美容師。終盤に「逃げて」と警告。" },
+    { "id": "saito_fumio", "displayName": "齋藤 文雄", "type": "infected", "role": "78歳老人。感染しているが受け入れている。" },
+    { "id": "ghost_empty", "displayName": "（空白）", "type": "ghost", "role": "幽霊アカウント。感染Phase1以降に出現。" },
+    { "id": "tsukumo_taisuke", "displayName": "九十九太助", "type": "entity", "role": "TTYの創設者（故人）。真エンディングに関わる最重要キャラ。" }
+  ]
+}
