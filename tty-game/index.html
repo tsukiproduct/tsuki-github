@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>石方SNS — 呪縛の街</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== START SCREEN ===== -->
+<div id="start-screen">
+  <div class="start-logo">🌙</div>
+  <div class="start-title">石方SNS</div>
+  <div class="start-subtitle">呪縛の街のソーシャルネットワーク</div>
+  <div id="start-btns"></div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app">
+  <div class="layout">
+
+    <!-- Left Sidebar -->
+    <nav id="left-sidebar">
+      <div class="sidebar-logo">
+        <span class="moon">🌙</span>
+        <span>石方SNS</span>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-item">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-text">ホーム</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">👥</span>
+          <span class="nav-text">フォロー中 (<span id="follow-count">0</span>)</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-text">探索</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">🔔</span>
+          <span class="nav-text">通知</span>
+        </div>
+      </div>
+      <div class="day-panel">
+        <div class="day-label">現在の日付</div>
+        <div id="day-number">Day 1</div>
+        <button id="day-next-btn" onclick="nextDay()">次の日へ →</button>
+      </div>
+    </nav>
+
+    <!-- Main Feed -->
+    <main id="feed">
+      <div class="feed-header">
+        <h1>ホーム</h1>
+        <span class="day-badge" id="day-badge">Day 1</span>
+        <button id="mobile-next-btn" class="mobile-next-btn" onclick="nextDay()">次の日へ →</button>
+      </div>
+      <div id="post-list"></div>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside id="right-sidebar">
+      <div class="sidebar-widget">
+        <div class="widget-title">いまのトレンド</div>
+        <div id="trend-list"></div>
+      </div>
+      <div class="sidebar-widget">
+        <div class="widget-title">知り合いかも？</div>
+        <div id="suggest-list"></div>
+      </div>
+      <div style="padding:12px;color:#536471;font-size:12px;line-height:1.8;">
+        石方SNS © 石方市<br>
+        利用規約 · プライバシー · 広告
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ===== PROFILE MODAL ===== -->
+<div id="profile-modal" onclick="closeProfile()">
+  <div class="profile-card" onclick="event.stopPropagation()">
+    <button id="modal-close-btn" onclick="closeProfile()">✕</button>
+    <div class="profile-header-banner"></div>
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar-large"></div>
+      <div class="profile-follow-area">
+        <button id="modal-follow-btn">フォローする</button>
+      </div>
+    </div>
+    <div class="profile-info">
+      <div class="profile-name"></div>
+      <div class="profile-handle"></div>
+      <div class="profile-bio"></div>
+      <div class="profile-stats">
+        <span><span class="stat-num stat-following">0</span> フォロー中</span>
+        <span><span class="stat-num stat-followers">0</span> フォロワー</span>
+      </div>
+    </div>
+    <div class="profile-posts"></div>
+  </div>
+</div>
+
+<!-- ===== ENDING SCREEN ===== -->
+<div id="ending-screen"></div>
+
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深夜の呪縛 ―KOBE NOIR―</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --nes-black:#000000; --nes-white:#fcfcfc; --nes-red:#f83800;
+  --nes-darkred:#881400; --nes-blue:#0078f8; --nes-darkblue:#000088;
+  --nes-gray:#7c7c7c; --nes-lightgray:#bcbcbc; --nes-green:#00a800;
+  --nes-yellow:#f8b800; --nes-purple:#7800f8; --nes-cyan:#00f8f8;
+  --nes-orange:#f87858; --nes-brown:#503000; --nes-blood:#8b0000;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#111;
+  display:flex;justify-content:center;align-items:center;
+  min-height:100vh;
+  font-family:'DotGothic16','Share Tech Mono',monospace;
+}
+#console-frame{
+  background:#2a1a00;border-radius:12px;padding:18px 18px 14px;
+  box-shadow:0 0 40px rgba(248,56,0,0.3),0 0 80px rgba(0,0,0,0.8);
+  max-width:780px;width:100%;
+}
+#screen-bezel{
+  background:#111;border-radius:8px;padding:10px;
+  box-shadow:inset 0 0 20px rgba(0,0,0,0.8);
+}
+#crt{position:relative;background:#000;border-radius:4px;overflow:hidden;}
+#crt::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:10;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.13) 3px,rgba(0,0,0,0.13) 4px);
+}
+#crt::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:11;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.7) 100%);
+}
+#main-area{display:flex;}
+#scene-area{flex:1;}
+#scene-canvas{display:block;width:100%;image-rendering:pixelated;image-rendering:crisp-edges;}
+#side-panel{
+  width:130px;background:#000088;border-left:2px solid #0078f8;
+  padding:6px 4px;font-size:9px;color:#fcfcfc;display:flex;flex-direction:column;gap:4px;
+}
+.side-label{color:#f8b800;font-size:8px;border-bottom:1px solid #0078f8;padding-bottom:2px;margin-bottom:1px;}
+#trust-bar-outer{background:#881400;height:6px;border:1px solid #f83800;border-radius:2px;overflow:hidden;}
+#trust-bar-inner{height:100%;background:#00a800;transition:width 0.5s;}
+#clue-list{font-size:8px;color:#bcbcbc;overflow:hidden;line-height:1.4;}
+#suspect-list{font-size:8px;color:#f87858;line-height:1.5;}
+#side-chap{font-size:9px;color:#00f8f8;}
+#side-loc{font-size:9px;color:#fcfcfc;word-break:break-all;}
+
+/* テキストエリア */
+#text-area{background:#000;border-top:2px solid #0078f8;padding:8px 10px 6px;min-height:72px;}
+#narrator-label{color:#f8b800;font-size:10px;margin-bottom:4px;}
+#text-output{color:#fcfcfc;font-size:11px;line-height:1.6;min-height:44px;}
+
+/* コマンドエリア */
+#cmd-area{background:#000088;border-top:2px solid #0078f8;padding:6px 8px;}
+
+/* 動詞グリッド */
+#verb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:4px;}
+/* 対象グリッド */
+#target-grid{display:none;flex-direction:column;gap:3px;}
+#target-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:4px;
+  color:#f8b800;font-size:10px;
+}
+#target-label{flex:1;}
+#back-btn{
+  background:#000;color:#f83800;border:1px solid #f83800;
+  padding:2px 8px;font-family:'DotGothic16',monospace;font-size:10px;cursor:pointer;
+}
+#back-btn:hover{background:#f83800;color:#000;}
+#target-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+
+.verb-btn{
+  background:#000;color:#f8b800;border:1px solid #0078f8;
+  padding:5px 2px;font-family:'DotGothic16',monospace;font-size:11px;
+  cursor:pointer;border-radius:2px;text-align:center;
+}
+.verb-btn:hover,.verb-btn.active{background:#0078f8;color:#fcfcfc;}
+.target-btn{
+  background:#000;color:#00f8f8;border:1px solid #7c7c7c;
+  padding:5px 2px;font-family:'DotGothic16',monospace;font-size:10px;
+  cursor:pointer;border-radius:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.target-btn:hover{background:#000088;color:#fcfcfc;border-color:#0078f8;}
+.target-btn:active{background:#0078f8;color:#000;}
+
+/* コントローラー */
+#controller-bar{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:0 4px;}
+.d-pad{display:grid;grid-template-columns:repeat(3,14px);grid-template-rows:repeat(3,14px);gap:1px;}
+.d-pad span{background:#4a3010;border:1px solid #7c5020;display:flex;align-items:center;justify-content:center;font-size:7px;color:#7c7c7c;border-radius:2px;}
+.d-pad span.center{background:#3a2000;}
+#console-title{color:#7c5020;font-size:10px;font-family:'Share Tech Mono',monospace;letter-spacing:2px;}
+.ctrl-btns{display:flex;gap:6px;align-items:center;}
+.btn-small{background:#4a3010;color:#7c7c7c;border:1px solid #7c5020;padding:2px 6px;font-size:8px;font-family:'Share Tech Mono',monospace;border-radius:1px;}
+.btn-circle{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-family:'Share Tech Mono',monospace;border:none;cursor:default;}
+.btn-a{background:#f83800;color:#fff;} .btn-b{background:#503000;color:#bcbcbc;}
+
+/* オーバーレイ */
+#flash-overlay{position:fixed;inset:0;background:rgba(248,56,0,0);pointer-events:none;z-index:100;transition:background 0.1s;}
+#darkness-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);pointer-events:none;z-index:99;transition:background 1s;}
+#chapter-banner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#000;border:3px solid #f83800;color:#f83800;font-size:20px;
+  padding:16px 32px;z-index:200;display:none;text-align:center;
+  box-shadow:0 0 30px rgba(248,56,0,0.5);
+}
+#save-indicator{position:fixed;top:10px;right:10px;background:#000088;color:#f8b800;padding:3px 8px;font-size:10px;border:1px solid #f8b800;z-index:300;display:none;}
+#crt-red-tint{position:absolute;inset:0;background:rgba(248,56,0,0);pointer-events:none;z-index:9;transition:background 1s;}
+
+/* スタート画面 */
+#start-screen{
+  position:fixed;inset:0;background:#000;z-index:500;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+#start-screen h1{color:#f83800;font-size:22px;text-shadow:0 0 10px rgba(248,56,0,0.8);text-align:center;line-height:1.4;}
+#start-screen p{color:#bcbcbc;font-size:11px;}
+.start-btn{background:#000;color:#00f8f8;border:2px solid #00f8f8;padding:8px 24px;font-family:'DotGothic16',monospace;font-size:14px;cursor:pointer;margin:4px;}
+.start-btn:hover{background:#00f8f8;color:#000;}
+</style>
+</head>
+<body>
+<div id="flash-overlay"></div>
+<div id="darkness-overlay"></div>
+<div id="chapter-banner"></div>
+<div id="save-indicator">💾 SAVE</div>
+
+<div id="start-screen">
+  <h1>深夜の呪縛<br>―KOBE NOIR―</h1>
+  <p>ファミコン風ホラーアドベンチャー</p>
+  <div id="start-btns"></div>
+</div>
+
+<div id="console-frame">
+  <div id="screen-bezel">
+    <div id="crt">
+      <div id="crt-red-tint"></div>
+      <div id="main-area">
+        <div id="scene-area">
+          <canvas id="scene-canvas" width="256" height="168"></canvas>
+        </div>
+        <div id="side-panel">
+          <div class="side-label">CHAPTER</div>
+          <div id="side-chap">第一章</div>
+          <div class="side-label">LOCATION</div>
+          <div id="side-loc">捜査本部</div>
+          <div class="side-label">CLUES <span id="clue-count">0</span>/10</div>
+          <div id="clue-list"></div>
+          <div class="side-label">TRUST</div>
+          <div id="trust-bar-outer"><div id="trust-bar-inner" style="width:100%"></div></div>
+          <div id="trust-num" style="font-size:8px;color:#bcbcbc;margin-top:2px;">100%</div>
+          <div class="side-label">SUSPECTS</div>
+          <div id="suspect-list"><div>ナカゼ</div><div>ヒメノ</div><div>ドウガン</div></div>
+        </div>
+      </div>
+      <div id="text-area">
+        <div id="narrator-label">◆ NARRATOR</div>
+        <div id="text-output"></div>
+      </div>
+      <div id="cmd-area">
+        <!-- 動詞グリッド -->
+        <div id="verb-grid">
+          <button class="verb-btn" onclick="selectVerb('調べる')">調べる</button>
+          <button class="verb-btn" onclick="selectVerb('話す')">話す</button>
+          <button class="verb-btn" onclick="selectVerb('移動')">移動</button>
+          <button class="verb-btn" onclick="selectVerb('手帳')">手帳</button>
+          <button class="verb-btn" onclick="selectVerb('ツキマオ')">ツキマオ</button>
+          <button class="verb-btn" onclick="selectVerb('たいほ')">たいほ</button>
+          <button class="verb-btn" onclick="selectVerb('ヘルプ')">ヘルプ</button>
+          <button class="verb-btn" id="ending-btn" style="display:none" onclick="selectVerb('エンディング')">選択</button>
+        </div>
+        <!-- 対象グリッド（動詞選択後に表示） -->
+        <div id="target-grid">
+          <div id="target-header">
+            <span id="target-label">▶ 対象を選んでください</span>
+            <button id="back-btn" onclick="backToVerbs()">◀ 戻る</button>
+          </div>
+          <div id="target-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="controller-bar">
+    <div class="d-pad">
+      <span></span><span>▲</span><span></span>
+      <span>◀</span><span class="center"></span><span>▶</span>
+      <span></span><span>▼</span><span></span>
+    </div>
+    <div id="console-title">KOBE NOIR © 2025</div>
+    <div class="ctrl-btns">
+      <span class="btn-small">SELECT</span>
+      <span class="btn-small">START</span>
+      <span class="btn-circle btn-b">B</span>
+      <span class="btn-circle btn-a">A</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let G = {
+  chapter:1, location:'捜査本部', clues:[], flags:{},
+  tsukimaoTrust:100, suspectStatus:{}, ending:null
+};
+let currentVerb = null;
+
+// ===== LOCATION DATA =====
+// 各場所で使える「調べる」対象と「話す」相手を定義
+const LOC_DATA = {
+  '捜査本部': {
+    examine: ['ホワイトボード','被害者写真','捜査資料'],
+    talk:    ['月真猫']
+  },
+  '事件現場': {
+    examine: ['血文字','遺体','部屋全体','窓'],
+    talk:    []
+  },
+  'サエキ証券': {
+    examine: ['書類','受付','社長室'],
+    talk:    ['社員']
+  },
+  '波止場': {
+    examine: ['壁の名前','廃倉庫','海'],
+    talk:    ['ドウガン']
+  },
+  'ヒメノのバー': {
+    examine: ['カウンター','ボトル棚'],
+    talk:    ['ヒメノ']
+  },
+  'ナカゼのアパート': {
+    examine: ['壁の記事','サエキの写真'],
+    talk:    ['ナカゼ']
+  },
+  'ウラベの店': {
+    examine: ['将棋盤','棚'],
+    talk:    ['ウラベ']
+  },
+  '月真猫の自宅': {
+    examine: ['床の写真','鍵付き引き出し','本棚','手帳'],
+    talk:    []
+  },
+  'マツリのアパート': {
+    examine: ['祭壇','手紙','人形','曼陀羅'],
+    talk:    ['マツリ']
+  },
+  '廃工場': {
+    examine: ['鉄骨','奥の光'],
+    talk:    ['月真猫']
+  }
+};
+
+const ALL_LOCATIONS = ['捜査本部','事件現場','サエキ証券','波止場','ヒメノのバー','ナカゼのアパート','ウラベの店','月真猫の自宅','マツリのアパート','廃工場'];
+
+// ===== SAVE/LOAD =====
+function saveGame() {
+  localStorage.setItem('kobeNoir2', JSON.stringify(G));
+  const si = document.getElementById('save-indicator');
+  si.style.display='block';
+  setTimeout(()=>si.style.display='none', 1000);
+}
+function loadGame() {
+  const d = localStorage.getItem('kobeNoir2');
+  if(d){G=JSON.parse(d);return true;}
+  return false;
+}
+
+// ===== START =====
+function initStartScreen() {
+  const hasSave = !!localStorage.getItem('kobeNoir2');
+  const div = document.getElementById('start-btns');
+  div.innerHTML='';
+  if(hasSave){
+    const b=document.createElement('button');
+    b.className='start-btn';b.textContent='▶ つづきから';
+    b.onclick=()=>{loadGame();startGame();};
+    div.appendChild(b);
+  }
+  const b2=document.createElement('button');
+  b2.className='start-btn';b2.textContent=hasSave?'★ はじめから':'▶ はじめる';
+  b2.onclick=()=>startGame();
+  div.appendChild(b2);
+}
+function startGame() {
+  document.getElementById('start-screen').style.display='none';
+  updateUI();drawScene();
+  typeText('神戸、2025年。\n深夜2時。港区の高級マンションで男の遺体が発見された。\n被害者はサエキ・コウジ（52）。大手証券会社の社長だ。\n\n刑事カミジョウ・リョウ、お前の出番だ。\n部下の月真猫が脇に立っている。','narrator');
+}
+
+// ===== UI UPDATE =====
+function updateUI() {
+  const chaps=['第一章','第二章','第三章','終章'];
+  document.getElementById('side-chap').textContent=chaps[G.chapter-1]||'終章';
+  document.getElementById('side-loc').textContent=G.location;
+  document.getElementById('clue-count').textContent=G.clues.length;
+  document.getElementById('clue-list').textContent=G.clues.map(c=>c.short).join('\n');
+  const t=G.tsukimaoTrust;
+  document.getElementById('trust-bar-inner').style.width=t+'%';
+  document.getElementById('trust-bar-inner').style.background=t>50?'#00a800':t>25?'#f8b800':'#f83800';
+  document.getElementById('trust-num').textContent=t+'%';
+  const tint=document.getElementById('crt-red-tint');
+  tint.style.background=t<=20?`rgba(248,56,0,${0.08+(20-t)*0.004})`:'rgba(248,56,0,0)';
+  // 終章ボタン
+  document.getElementById('ending-btn').style.display=G.chapter>=4?'block':'none';
+}
+
+// ===== TEXT =====
+let typeTimer=null;
+function typeText(text,speaker='narrator') {
+  const out=document.getElementById('text-output');
+  const label=document.getElementById('narrator-label');
+  const colors={narrator:'#fcfcfc',tsukimao:'#00f8f8',matsuri:'#f878f8',horror:'#f83800',system:'#f8b800'};
+  const names={narrator:'◆ NARRATOR',tsukimao:'◆ 月真猫',matsuri:'◆ マツリ',horror:'◆ !!!',system:'◆ SYSTEM'};
+  label.style.color=colors[speaker]||'#f8b800';
+  label.textContent=names[speaker]||'◆ '+speaker;
+  out.style.color=colors[speaker]||'#fcfcfc';
+  if(typeTimer)clearInterval(typeTimer);
+  out.textContent='';let i=0;
+  typeTimer=setInterval(()=>{
+    if(i<text.length){out.textContent+=text[i];i++;}
+    else clearInterval(typeTimer);
+  },26);
+}
+
+// ===== FLASH / DARKEN =====
+function flashRed(){
+  const f=document.getElementById('flash-overlay');
+  f.style.background='rgba(248,56,0,0.5)';
+  setTimeout(()=>f.style.background='rgba(248,56,0,0)',300);
+}
+function darken(cb){
+  const d=document.getElementById('darkness-overlay');
+  d.style.background='rgba(0,0,0,0.95)';
+  setTimeout(()=>{d.style.background='rgba(0,0,0,0)';if(cb)cb();},1500);
+}
+function showChapterBanner(text,cb){
+  const b=document.getElementById('chapter-banner');
+  b.textContent=text;b.style.display='block';
+  setTimeout(()=>{b.style.display='none';if(cb)cb();},2500);
+}
+
+// ===== CLUES =====
+const CLUES={
+  blood_text:        {short:'血文字',       full:'窓ガラスの血文字「助けて……ツキ」'},
+  saeki_background:  {short:'サエキの素性', full:'サエキは連続詐欺師。多くの人を破産させた'},
+  nakaze_motive:     {short:'ナカゼの動機', full:'ナカゼはサエキに全財産を奪われた'},
+  himeno_alibi:      {short:'ヒメノの証言', full:'「死の前夜、月が出る夜は気をつけろと言っていた」'},
+  dougan_testimony:  {short:'ドウガンの証言',full:'「3年前、月真猫がサエキ殺害の協力を依頼してきた」'},
+  nakaze_testimony2: {short:'ナカゼの目撃', full:'「マンション前で刑事の部下に似た人物を見た」'},
+  parent_suicide:    {short:'月一家の入水自殺',full:'「月という夫婦が5年前に神戸港から入水自殺した」'},
+  tsuki_diary:       {short:'月真猫の手帳', full:'手帳に「サエキは必ず裁かれる。俺が裁く。」'},
+  matsuri_confession:{short:'マツリの告白', full:'「やりましょう、と私が言ったんです」'},
+  factory_key:       {short:'廃工場の鍵',   full:'月真猫の自宅で廃工場への鍵を発見'},
+};
+function addClue(key){
+  if(G.clues.find(c=>c.key===key))return false;
+  const c=CLUES[key];if(!c)return false;
+  G.clues.push({key,short:c.short,full:c.full});
+  flashRed();saveGame();updateUI();checkChapterAdvance();return true;
+}
+
+// ===== CHAPTER =====
+function checkChapterAdvance(){
+  if(G.chapter===1&&G.clues.length>=3)advanceChapter(2);
+  else if(G.chapter===2&&G.clues.length>=6&&G.flags.parent_truth)advanceChapter(3);
+  else if(G.chapter===3&&G.clues.length>=8&&G.tsukimaoTrust<=20)advanceChapter(4);
+}
+function advanceChapter(n){
+  if(G.chapter>=n)return;
+  G.chapter=n;
+  const names={2:'第二章　歪んだ真実',3:'第三章　深淵への扉',4:'終章　真夜中の告白'};
+  saveGame();
+  showChapterBanner(names[n],()=>{
+    updateUI();drawScene();
+    const msgs={
+      2:'【第二章】\n新たな証言が出てきた。事件の闇が深くなる。',
+      3:'【第三章】\nウラベが廃工場とマツリのアパートの場所を教えてくれた。\n真相はもうすぐそこだ。',
+      4:'【終章】\n月真猫から連絡が来た。\n「廃工場で、全部話します」\n\n廃工場へ移動してください。'
+    };
+    typeText(msgs[n]||'','system');
+  });
+}
+
+// ===== COMMAND SELECTION UI =====
+function selectVerb(verb) {
+  currentVerb = verb;
+  // 動詞をハイライト
+  document.querySelectorAll('.verb-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // 即時実行コマンド
+  if(verb==='手帳'){showNotebook();backToVerbs();return;}
+  if(verb==='ツキマオ'){talkTsukimao();backToVerbs();return;}
+  if(verb==='ヘルプ'){showHelp();backToVerbs();return;}
+  if(verb==='エンディング'){showEndingChoices();return;}
+
+  const verbGrid=document.getElementById('verb-grid');
+  const targetGrid=document.getElementById('target-grid');
+
+  verbGrid.style.display='none';
+  targetGrid.style.display='flex';
+
+  const label=document.getElementById('target-label');
+  const btnsDiv=document.getElementById('target-btns');
+  btnsDiv.innerHTML='';
+
+  if(verb==='調べる'){
+    label.textContent='▶ 何を調べる？';
+    const targets=(LOC_DATA[G.location]?.examine)||[];
+    if(targets.length===0){
+      typeText('ここで調べられるものはない。','narrator');
+      backToVerbs();return;
+    }
+    targets.forEach(t=>addTargetBtn(btnsDiv,t,()=>{investigate(t);backToVerbs();}));
+  }
+  else if(verb==='話す'){
+    label.textContent='▶ 誰に話す？';
+    const targets=(LOC_DATA[G.location]?.talk)||[];
+    if(targets.length===0){
+      typeText('ここに話せる人物はいない。','narrator');
+      backToVerbs();return;
+    }
+    targets.forEach(t=>addTargetBtn(btnsDiv,t,()=>{talkTo(t);backToVerbs();}));
+  }
+  else if(verb==='移動'){
+    label.textContent='▶ どこへ移動する？';
+    const avail=ALL_LOCATIONS.filter(l=>{
+      if(l==='マツリのアパート'||l==='廃工場')return G.chapter>=3;
+      return l!==G.location;
+    });
+    avail.forEach(l=>addTargetBtn(btnsDiv,l,()=>{moveLocation(l);}));
+  }
+  else if(verb==='たいほ'){
+    label.textContent='▶ 誰を逮捕する？';
+    const suspects=['ナカゼ','ヒメノ','ドウガン','月真猫'];
+    suspects.forEach(s=>addTargetBtn(btnsDiv,s,()=>{arrest(s);backToVerbs();}));
+  }
+}
+
+function addTargetBtn(container, label, onClick) {
+  const btn=document.createElement('button');
+  btn.className='target-btn';
+  btn.textContent=label;
+  btn.onclick=onClick;
+  container.appendChild(btn);
+}
+
+function backToVerbs() {
+  currentVerb=null;
+  document.getElementById('verb-grid').style.display='grid';
+  document.getElementById('target-grid').style.display='none';
+  document.querySelectorAll('.verb-btn').forEach(b=>b.classList.remove('active'));
+}
+
+function showEndingChoices() {
+  const label=document.getElementById('target-label');
+  const btnsDiv=document.getElementById('target-btns');
+  document.getElementById('verb-grid').style.display='none';
+  document.getElementById('target-grid').style.display='flex';
+  label.textContent='▶ どうする？';
+  btnsDiv.innerHTML='';
+  addTargetBtn(btnsDiv,'逮捕する',()=>{endingA();backToVerbs();});
+  addTargetBtn(btnsDiv,'最後まで話を聞く',()=>{endingAPlus();backToVerbs();});
+  addTargetBtn(btnsDiv,'証拠を燃やす',()=>{endingB();backToVerbs();});
+}
+
+// ===== MOVE =====
+function moveLocation(dest) {
+  if((dest==='マツリのアパート'||dest==='廃工場')&&G.chapter<3){
+    typeText('まだその場所の情報がない。もっと捜査を進めよう。','narrator');
+    backToVerbs();return;
+  }
+  darken(()=>{
+    G.location=dest;
+    updateUI();drawScene();saveGame();
+    describeLocation(dest);
+    backToVerbs();
+  });
+}
+function describeLocation(loc){
+  const descs={
+    '捜査本部':'神戸中央警察署の捜査本部。\nホワイトボードにサエキの顔写真が貼られ、大きく×印がついている。\n月真猫が脇に立って報告を待っている。',
+    '事件現場':'港区の高級マンション12階。\n窓ガラスに乾いた血文字が残っている。\n「助けて……ツキ」\n月の光が差し込んでいる。',
+    'サエキ証券':'中央区のガラス張りビル。\n社員たちは虚ろな表情で働いている。\nサエキの椅子は空のままだ。',
+    '波止場':'旧波止場。廃倉庫が並ぶ暗い港。\n壁に名前が羅列されている。詐欺被害者の名だ。\nドウガンの縄張りだ。',
+    'ヒメノのバー':'北野町の小さなバー「BAR HIMENO」。\nカウンターに一人の女が座っている。\nヒメノ・サチコ。サエキの元愛人。',
+    'ナカゼのアパート':'灘区の古いアパート。\n壁一面にサエキ関連の新聞記事が貼られている。\n憎しみの記録だ。',
+    'ウラベの店':'三宮の路地裏の雑貨店。\n将棋盤の前にウラベが座っている。\n金次第で何でも教えてくれる情報屋だ。',
+    '月真猫の自宅':'東灘区のマンション。\n犯罪心理学の本が棚に並ぶ。\n床に古い写真が散らばっている。\n鍵付きの引き出しがある。',
+    'マツリのアパート':'長田区の古い木造アパート。\n異様な空気。曼陀羅の絵が壁中に貼られ、\n祭壇に蝋燭が灯っている。目のない人形が並んでいる。',
+    '廃工場':'旧神戸製鉄の廃工場。\n錆びた鉄骨の奥に小さな光が見える。\n月真猫のシルエットが浮かぶ。'
+  };
+  typeText(descs[loc]||`${loc}に到着した。`,'narrator');
+}
+
+// ===== INVESTIGATE =====
+function investigate(target) {
+  const loc=G.location;
+  // 事件現場
+  if(loc==='事件現場'){
+    if(target==='血文字'||target==='窓'){
+      if(!G.flags.blood_investigated){
+        G.flags.blood_investigated=true;
+        G.tsukimaoTrust-=5;updateUI();
+        addClue('blood_text');
+        typeText('「助けて……ツキ」\n死ぬ間際に被害者が書いた言葉だ。\n「ツキ」とは何を指すのか。\n\n月真猫が素早く口を開いた。\n「死の間際の錯乱でしょう。気にしないでください」\n（一瞬、その目が揺れた気がした）','horror');
+      } else {
+        typeText('乾いた血文字。「助けて……ツキ」。\nこの意味を突き止めなければならない。','narrator');
+      }
+      return;
+    }
+    if(target==='遺体'){
+      typeText('鋭器による一撃。即死とみられる。\n抵抗の跡はない。被害者はまったく気づいていなかったようだ。','narrator');return;
+    }
+    if(target==='部屋全体'){
+      typeText('高級マンションの一室。\n争った形跡はなく、被害者はソファに座ったまま絶命している。\n犯人は知り合いだった可能性が高い。','narrator');return;
+    }
+  }
+  // サエキ証券
+  if(loc==='サエキ証券'){
+    if(target==='書類'||target==='社長室'){
+      if(!G.flags.saeki_investigated){
+        G.flags.saeki_investigated=true;
+        addClue('saeki_background');
+        typeText('書類を調べると、被害者の実態が見えてきた。\nサエキは20年以上にわたり、顧客から数十億円を騙し取っていた。\n被害者は全国に1000人以上。\n破産した家族、離散した家族……無数の人生を壊していた。','narrator');
+      } else {
+        typeText('サエキの詐欺の記録。被害者は1000人以上。','narrator');
+      }
+      return;
+    }
+    if(target==='受付'){
+      typeText('受付嬢は虚ろな表情で言った。\n「社長は……いつも深夜に帰っていました」','narrator');return;
+    }
+  }
+  // 波止場
+  if(loc==='波止場'){
+    if(target==='壁の名前'){
+      if(!G.flags.dougan_wall){
+        G.flags.dougan_wall=true;
+        typeText('壁の羅列を近くで見ると、詐欺被害者の名前だった。\n数百人分。\n中に「月　正和・月　真子」という名前がある。','horror');
+      } else {
+        typeText('「月　正和・月　真子」の名前が見える。','narrator');
+      }
+      return;
+    }
+    if(target==='廃倉庫'){typeText('錆びた廃倉庫。ドウガンの縄張りだ。','narrator');return;}
+    if(target==='海'){typeText('暗い神戸湾。5年前、ここから入水自殺した夫婦がいた……','narrator');return;}
+  }
+  // ヒメノのバー
+  if(loc==='ヒメノのバー'){
+    if(target==='カウンター'){typeText('カウンターに古いグラスが並ぶ。\nヒメノの手首に古い傷が見えた。','horror');return;}
+    if(target==='ボトル棚'){typeText('高級なウイスキーが並ぶ。\nサエキが贈ったものかもしれない。','narrator');return;}
+  }
+  // ナカゼのアパート
+  if(loc==='ナカゼのアパート'){
+    if(target==='壁の記事'){
+      if(!G.flags.nakaze_wall){
+        G.flags.nakaze_wall=true;
+        addClue('nakaze_motive');
+        typeText('壁一面の記事を読む。\nサエキに騙されたナカゼの10年間が見えた。\n全財産、職、家族……全てを失った。\n憎しみは狂気の域に達している。','horror');
+      } else {
+        typeText('サエキへの憎しみが詰まった記事の壁。','narrator');
+      }
+      return;
+    }
+    if(target==='サエキの写真'){typeText('写真に赤いペンで何度も×が書かれている。\n怨念が伝わってくる。','horror');return;}
+  }
+  // ウラベの店
+  if(loc==='ウラベの店'){
+    if(target==='将棋盤'){typeText('精巧な将棋盤。ウラベが「一局どうだ？」と笑った。','narrator');return;}
+    if(target==='棚'){typeText('埃をかぶった雑貨が並ぶ。\n本当の商売は情報屋だろう。','narrator');return;}
+  }
+  // 月真猫の自宅
+  if(loc==='月真猫の自宅'){
+    if(target==='床の写真'){
+      if(!G.flags.photo_found){
+        G.flags.photo_found=true;
+        typeText('床の写真を拾い上げる。\n若い夫婦と二人の子ども。\n裏に「月　正和・真子・真猫・真月里。神戸港にて」\n日付は20年前。家族四人の笑顔。','narrator');
+      } else {
+        typeText('古い家族写真。波止場の壁の名前と一致している。','narrator');
+      }
+      return;
+    }
+    if(target==='鍵付き引き出し'){
+      if(!G.flags.drawer_found){
+        G.flags.drawer_found=true;
+        addClue('factory_key');
+        typeText('鍵付きの引き出し。\n中から古い鍵が出てきた。\n「旧神戸製鉄」と書かれたキーホルダーがついている。','narrator');
+      } else {
+        typeText('廃工場の鍵はもう持っている。','narrator');
+      }
+      return;
+    }
+    if(target==='本棚'){typeText('犯罪心理学、法医学、アリバイ工作の本が並ぶ。\n刑事の本棚にしてはあまりにも専門的だ。','horror');return;}
+    if(target==='手帳'){
+      if(!G.flags.diary_read){
+        G.flags.diary_read=true;
+        addClue('tsuki_diary');
+        flashRed();
+        typeText('【月真猫の手帳　最終ページ】\n\n「サエキは必ず裁かれる。俺が裁く。\n父さん、母さん、見ていてくれ。\n俺は刑事になった。全ての証拠を処理する力を持った。\nマツリ、ありがとう。\nお前が言ってくれなければ踏み出せなかった」\n（日付は事件の3日前）','horror');
+      } else {
+        typeText('手帳はもう読んだ。','narrator');
+      }
+      return;
+    }
+  }
+  // マツリのアパート
+  if(loc==='マツリのアパート'){
+    if(target==='祭壇'){
+      if(!G.flags.altar_found){
+        G.flags.altar_found=true;
+        typeText('祭壇には二枚の写真が置かれている。\n年配の夫婦。蝋燭に照らされ、花が供えられている。\nこれは……月真猫の両親の写真だ。','horror');
+      } else {
+        typeText('両親の写真に蝋燭の光が揺れている。','narrator');
+      }
+      return;
+    }
+    if(target==='手紙'){
+      if(!G.flags.letter_read){
+        G.flags.letter_read=true;
+        typeText('【手紙】\n「お兄ちゃんへ\n\nお父さんとお母さんが水に消えていく夢を\n毎晩見るの。誰かが背中を押したの。\nそれはサエキよ。\n私が言うね。やりましょう、って。\n神様は怠惰な人を許さない。\n　　　　真月里より」\n（便せんに月の絵が描かれている）','matsuri');
+      } else {
+        typeText('手紙は読んだ。月の絵が描かれた便せん。','narrator');
+      }
+      return;
+    }
+    if(target==='人形'){typeText('目のない人形が一列に並んでいる。\nすべて同じ方向を向いている。祭壇の方向だ。','horror');return;}
+    if(target==='曼陀羅'){typeText('壁一面に描かれた曼陀羅。\n中心に月の絵が描かれている。','horror');return;}
+  }
+  // 廃工場
+  if(loc==='廃工場'){
+    if(target==='鉄骨'){typeText('錆びた鉄骨が天井を覆う。\n足元には水が溜まっている。','narrator');return;}
+    if(target==='奥の光'){
+      if(G.chapter>=4){
+        typeText('月真猫が待っている。\n「選択」ボタンで決断してください。','system');
+      } else {
+        typeText('奥に光が見える。何かがある。','narrator');
+      }
+      return;
+    }
+  }
+  typeText(`${target}を調べた。今は特に気になることはない。`,'narrator');
+}
+
+// ===== TALK TO =====
+function talkTo(target) {
+  if(target==='月真猫')         { talkTsukimao();return; }
+  if(target==='ナカゼ')         { interrogateNakaze();return; }
+  if(target==='ヒメノ')         { interrogateHimeno();return; }
+  if(target==='ドウガン')       { interrogateDougan();return; }
+  if(target==='ウラベ')         { interrogateUrabe();return; }
+  if(target==='マツリ')         { interrogateMatsuri();return; }
+  if(target==='社員')           { typeText('社員は虚ろな表情で言った。\n「社長のことは……何も知りません」','narrator');return; }
+  typeText(`${target}と話した。`,'narrator');
+}
+
+// ===== TSUKIMAO =====
+function talkTsukimao() {
+  const t=G.tsukimaoTrust;
+  if(t>=70){
+    typeText('月真猫「刑事さん、容疑者はおそらくナカゼです。\n動機も機会も揃っています。\n証拠を集めれば、必ず真相に辿り着けます」','tsukimao');
+  } else if(t>=40){
+    typeText('月真猫「……刑事さん、少し疲れているんじゃないですか」\n「なぜそこを調べるんですか？」\n（一瞬、瞳が揺れた）','tsukimao');
+  } else if(t>=1){
+    typeText('月真猫「刑事さん。真実とは、時に人を傷つけるものです」\n「サエキは……裁かれるべき人間でした。それだけです」\n（声が低く、平坦だった）','tsukimao');
+  } else {
+    darken(()=>{
+      flashRed();
+      typeText('月真猫「……刑事さん」\n\n（長い沈黙）\n\n「俺が……やりました」\n「廃工場で、全部話します」','tsukimao');
+      G.chapter=4;saveGame();updateUI();
+      setTimeout(()=>showChapterBanner('終章　真夜中の告白',()=>{
+        drawScene();
+        typeText('【終章】廃工場へ移動してください。\n月真猫が待っている。','system');
+      }),1500);
+    });
+  }
+}
+
+// ===== INTERROGATE =====
+function interrogateNakaze(){
+  if(G.location!=='ナカゼのアパート'){typeText('ナカゼはここにいない。','narrator');return;}
+  const count=G.suspectStatus['nakaze']||0;
+  G.suspectStatus['nakaze']=count+1;saveGame();
+  if(count===0){
+    typeText('【ナカゼ・トオル　第1回】\n\n「アリバイ？……ない。あの夜は一人でいた」\n「サエキに全部奪われました。仕事も、金も、家族も」\n「恨んでいますよ。当然でしょう。でも……」\n（目が泳いだ）','narrator');
+  } else if(count===1&&G.chapter>=2){
+    addClue('nakaze_testimony2');
+    G.tsukimaoTrust-=15;updateUI();
+    typeText('【ナカゼ・トオル　第2回】\n\n「実は……あの夜、マンションに行ったんです」\n「でも既に死んでいた。本当です」\n「部屋の前に……刑事さんの部下に似た人物がいました」\n「背が高くて、無表情で。目が……怖かった」','horror');
+  } else {
+    typeText('ナカゼ・トオルはそれ以上話さなかった。','narrator');
+  }
+}
+function interrogateHimeno(){
+  if(G.location!=='ヒメノのバー'){typeText('ヒメノはここにいない。','narrator');return;}
+  const count=G.suspectStatus['himeno']||0;
+  G.suspectStatus['himeno']=count+1;saveGame();
+  if(count===0){
+    typeText('【ヒメノ・サチコ　第1回】\n\n「遺産は……一円ももらえません。でもいいんです」\n「あの人が死んだことで、解放された人が何人いるか」\n「犯人には……正直、感謝しています」\n（手首に古い傷が見えた）','narrator');
+  } else if(count===1&&G.chapter>=2){
+    addClue('himeno_alibi');
+    G.tsukimaoTrust-=10;updateUI();
+    typeText('【ヒメノ・サチコ　第2回】\n\n「そういえば……死ぬ直前、あの人が言っていました」\n「『月が出ている夜は気をつけろ』と」\n「意味が分からなくて、笑っていたんですが……」\n（グラスを傾ける）','horror');
+  } else {
+    typeText('ヒメノ・サチコはグラスを磨くだけだった。','narrator');
+  }
+}
+function interrogateDougan(){
+  if(G.location!=='波止場'){typeText('ドウガンはここにいない。','narrator');return;}
+  const count=G.suspectStatus['dougan']||0;
+  G.suspectStatus['dougan']=count+1;saveGame();
+  if(count===0){
+    typeText('【ドウガン・ケン　第1回】\n\n「俺か？俺より深く恨んでいた奴がいたよ」\n「サエキに全部持ってかれた家族がいた」\n「俺は……ただの取り立て屋だ」','narrator');
+  } else if(count>=1&&G.chapter>=2){
+    addClue('dougan_testimony');
+    G.tsukimaoTrust-=30;updateUI();flashRed();
+    typeText('【ドウガン・ケン　第2回】\n\n「3年前……刑事の若い男が俺に接触してきた」\n「サエキを殺す。協力しろと言いやがった」\n「俺は断った。でもあの眼は本物だった」\n「月真猫……そういう名前だったか」','horror');
+  } else {
+    typeText('ドウガン・ケンは黙って海を見ていた。','narrator');
+  }
+}
+function interrogateUrabe(){
+  if(G.location!=='ウラベの店'){typeText('ウラベはここにいない。','narrator');return;}
+  const count=G.suspectStatus['urabe']||0;
+  G.suspectStatus['urabe']=count+1;saveGame();
+  if(count===0&&G.chapter>=2){
+    G.flags.parent_truth=true;
+    addClue('parent_suicide');saveGame();checkChapterAdvance();
+    typeText('【ウラベ・ミノル　第1回】\n\n将棋の駒を動かしながら、ウラベが話す。\n「月という夫婦がいてね。5年前に神戸港から入水自殺したんだ」\n「サエキに全財産を騙し取られてね。行き場がなくなったんだろう」\n「残された子どもが二人いたらしい。今どうしているか……」','horror');
+  } else if(count>=1&&G.chapter>=2){
+    addClue('factory_key');
+    typeText('【ウラベ・ミノル　第2回】\n\n「月真猫と、妹の夢逢真月里が\n3年前から廃工場に出入りしている」\n「旧神戸製鉄の工場だ。夜中に二人で何かやっていた」\n「妹のアパートは長田区だよ」\n（住所を書いたメモを渡した）\n\n→ マツリのアパートと廃工場への道が開けた。','narrator');
+    if(G.chapter<3){G.chapter=3;updateUI();saveGame();}
+  } else if(count===0){
+    typeText('ウラベが将棋を指しながら言う。\n「もう少し捜査が進んだら話してやる」','narrator');
+  }
+}
+function interrogateMatsuri(){
+  if(G.location!=='マツリのアパート'){typeText('マツリはここにいない。','narrator');return;}
+  const count=G.suspectStatus['matsuri']||0;
+  G.suspectStatus['matsuri']=count+1;saveGame();
+  if(count===0){
+    typeText('【夢逢真月里　第1回】\n\n薄暗い部屋でマツリは正座している。\n「神の裁きとは、人の手によって下されることもある」\n「私の役割は……別にありました」\n（目が虚ろだ）','matsuri');
+  } else if(count===1){
+    addClue('matsuri_confession');flashRed();
+    typeText('【夢逢真月里　第2回】\n\n「お父さんとお母さんが冷たい水に消えていく夢を\n毎晩見ます……毎晩」\n「だから……私が言ったんです」\n「やりましょう、って」\n（長い沈黙。蝋燭の火が揺れる）','matsuri');
+    G.tsukimaoTrust=Math.min(G.tsukimaoTrust,10);updateUI();checkChapterAdvance();
+  } else {
+    typeText('【夢逢真月里　第3回】\n\n「私のことは逮捕してください。全て証言します」\n「でも……兄だけは」\n（マツリの声が震えた）','matsuri');
+  }
+}
+
+// ===== NOTEBOOK =====
+function showNotebook(){
+  if(G.clues.length===0){typeText('手帳はまだ空だ。','narrator');return;}
+  typeText('【捜査手帳】\n'+G.clues.map((c,i)=>`${i+1}.${c.full}`).join('\n'),'system');
+}
+function showHelp(){
+  typeText('【操作方法】\n・「調べる」→場所の物を調査\n・「話す」  →その場の人物に尋問\n・「移動」  →別の場所へ移動\n・「手帳」  →集めた証拠を確認\n・「ツキマオ」→部下に話しかける\n・「たいほ」 →容疑者を逮捕\n・「選択」  →終章の決断（終章のみ）','system');
+}
+
+// ===== ARREST =====
+function arrest(target){
+  if(G.chapter<4){
+    if(target==='ナカゼ'&&G.clues.length>=2){
+      typeText('ナカゼを逮捕した……\n\nしかし翌日、決定的なアリバイが証明された。\nナカゼは釈放。捜査は振り出しに戻った。\n真犯人は今も自由の身だ。','horror');return;
+    }
+    typeText('まだ決定的な証拠がない。\n逮捕するには証拠が足りない。','narrator');return;
+  }
+  if(target==='月真猫'){endingA();}
+  else {typeText('逮捕すべき相手は月真猫だ。','narrator');}
+}
+
+// ===== ENDINGS =====
+function endingA(){
+  darken(()=>{
+    flashRed();
+    document.getElementById('chapter-banner').textContent='ENDING A　苦い正義';
+    document.getElementById('chapter-banner').style.display='block';
+    setTimeout(()=>{
+      document.getElementById('chapter-banner').style.display='none';
+      typeText('【ENDING A：苦い正義「法の番人」】\n\nカミジョウは月真猫に手錠をかけた。\n月真猫は抵抗しなかった。\n「刑事さん……正しいですよ」\n\n懲役12年。控訴なし。\nカミジョウは昇進の打診を断った。\n\nマツリは刑務所の窓から\n毎夜、月を見続けた。\n\n「俺は正義を執行した。\n　なのになぜ、胸が痛いんだ」\n\n　　　　　　　―END―','horror');
+      G.ending='A';saveGame();showRestartBtn();
+    },2500);
+  });
+}
+function endingAPlus(){
+  if(G.chapter<4){typeText('今は関係ない。','narrator');return;}
+  darken(()=>{
+    document.getElementById('chapter-banner').textContent='ENDING A+　真実を語る者';
+    document.getElementById('chapter-banner').style.display='block';
+    setTimeout(()=>{
+      document.getElementById('chapter-banner').style.display='none';
+      typeText('【ENDING A+：証言する刑事「真実を語る者」】\n\nカミジョウは月真猫の話を最後まで聞いた。\n月真猫「……全部話します。父と母のこと。全部」\n\n逮捕後、法廷でカミジョウは証言台に立った。\n「社会の罪もまた、問われるべきだと思います」\n\n懲役10年に減刑。\nカミジョウは職を辞し、弁護士を目指した。\n\n「正義は一つじゃない。\n　それをお前が教えてくれた」\n\n　　　　　　　―END―','narrator');
+      G.ending='A+';saveGame();showRestartBtn();
+    },2500);
+  });
+}
+function endingB(){
+  if(G.chapter<4){typeText('今は関係ない。','narrator');return;}
+  darken(()=>{
+    flashRed();
+    document.getElementById('chapter-banner').textContent='ENDING B　夜に消える';
+    document.getElementById('chapter-banner').style.display='block';
+    setTimeout(()=>{
+      document.getElementById('chapter-banner').style.display='none';
+      typeText('【ENDING B：夜に消える「共犯者」】\n\nカミジョウは証拠書類をすべて燃やした。\n月真猫は黙って見ていた。\n「……ありがとうございます」\n\n事件は迷宮入り。\nカミジョウは毎夜、夢を見た。\n二つの靴が神戸港に沈んでいく夢を。\n\n「正義と共犯の間で、\n　今夜も眠れない」\n\n　　　　　　　―END―','horror');
+      G.ending='B';saveGame();showRestartBtn();
+    },2500);
+  });
+}
+function showRestartBtn(){
+  setTimeout(()=>{
+    const out=document.getElementById('text-output');
+    out.innerHTML+='<br><br><button class="verb-btn" onclick="restartGame()" style="font-size:12px;padding:6px 14px;">もう一度プレイ</button>';
+  },2500);
+}
+function restartGame(){
+  G={chapter:1,location:'捜査本部',clues:[],flags:{},tsukimaoTrust:100,suspectStatus:{},ending:null};
+  localStorage.removeItem('kobeNoir2');
+  backToVerbs();updateUI();drawScene();
+  typeText('神戸、2025年。\n深夜2時。港区の高級マンションで男の遺体が発見された。\n被害者はサエキ・コウジ（52）。大手証券会社の社長だ。\n\n刑事カミジョウ・リョウ、お前の出番だ。','narrator');
+}
+
+// ===== PIXEL ART =====
+function drawScene(){
+  const canvas=document.getElementById('scene-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=256,H=168;
+  ctx.clearRect(0,0,W,H);
+  const scenes={'捜査本部':drawHQ,'事件現場':drawCrimeScene,'サエキ証券':drawCompany,'波止場':drawWharf,'ヒメノのバー':drawBar,'ナカゼのアパート':drawApartment,'ウラベの店':drawUrabeShop,'月真猫の自宅':drawTsukiHome,'マツリのアパート':drawMatsuriRoom,'廃工場':drawFactory};
+  const fn=scenes[G.location];
+  if(fn)fn(ctx,W,H); else drawHQ(ctx,W,H);
+}
+function px(ctx,x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(x,y,w,h);}
+function drawHQ(ctx,W,H){
+  px(ctx,0,0,W,H,'#000088');px(ctx,0,H-30,W,30,'#7c5020');
+  px(ctx,60,8,136,6,'#fcfcfc');px(ctx,68,6,4,14,'#bcbcbc');px(ctx,184,6,4,14,'#bcbcbc');
+  px(ctx,20,90,100,40,'#503000');px(ctx,20,88,100,6,'#7c5020');
+  px(ctx,130,90,100,40,'#503000');px(ctx,130,88,100,6,'#7c5020');
+  px(ctx,90,20,76,60,'#fcfcfc');px(ctx,92,22,72,56,'#bcbcbc');
+  px(ctx,112,28,32,32,'#f87858');px(ctx,118,30,20,14,'#f8b800');px(ctx,116,42,24,12,'#f87858');
+  for(let i=0;i<32;i++){px(ctx,112+i,28+i,2,2,'#f83800');px(ctx,143-i,28+i,2,2,'#f83800');}
+  px(ctx,190,70,20,60,'#0078f8');px(ctx,195,60,10,14,'#0078f8');
+  px(ctx,196,64,3,3,'#00f8f8');px(ctx,201,64,3,3,'#00f8f8');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('捜査本部',4,12);
+  ctx.fillStyle='#f83800';ctx.font='7px DotGothic16,monospace';ctx.fillText('CHAPTER '+G.chapter,180,12);
+}
+function drawCrimeScene(ctx,W,H){
+  px(ctx,0,0,W,100,'#000088');
+  [[20,10],[50,20],[90,8],[140,15],[200,6],[230,18],[10,40],[180,30]].forEach(([x,y])=>px(ctx,x,y,2,2,'#fcfcfc'));
+  px(ctx,200,10,24,24,'#f8b800');px(ctx,206,12,12,20,'#f8b800');
+  px(ctx,0,30,60,100,'#000088');px(ctx,0,30,60,70,'#0078f8');
+  for(let y=32;y<95;y+=12)for(let x=4;x<55;x+=10){px(ctx,x,y,6,8,'#f8b800');}
+  px(ctx,60,20,136,110,'#000088');px(ctx,60,20,136,90,'#0078f8');
+  for(let y=24;y<105;y+=14)for(let x=64;x<190;x+=16){px(ctx,x,y,10,10,'#f8b800');}
+  px(ctx,100,40,30,20,'#f83800');
+  ctx.fillStyle='#881400';ctx.font='7px DotGothic16,monospace';ctx.fillText('ツキ',104,54);
+  px(ctx,0,H-28,W,28,'#000000');px(ctx,90,H-28,60,8,'#881400');px(ctx,90,H-24,12,14,'#881400');
+  px(ctx,80,H-22,40,10,'#8b0000');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('事件現場',4,12);
+}
+function drawCompany(ctx,W,H){
+  px(ctx,0,0,W,80,'#000088');px(ctx,40,10,176,120,'#0078f8');
+  for(let y=14;y<125;y+=14)for(let x=44;x<210;x+=18){px(ctx,x,y,12,10,y%28<14?'#bcbcbc':'#7c7c7c');}
+  px(ctx,0,H-30,W,30,'#503000');px(ctx,100,100,56,30,'#000088');
+  px(ctx,110,102,16,28,'#00f8f8');px(ctx,130,102,16,28,'#00f8f8');
+  px(ctx,148,95,12,35,'#f87858');px(ctx,151,88,6,10,'#f8b800');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('サエキ証券',4,12);
+}
+function drawWharf(ctx,W,H){
+  px(ctx,0,0,W,80,'#000000');px(ctx,0,80,W,60,'#000088');
+  for(let x=0;x<W;x+=20){px(ctx,x,84,14,2,'#0078f8');}
+  px(ctx,60,70,136,14,'#503000');for(let x=60;x<196;x+=16){px(ctx,x,74,4,40,'#7c5020');}
+  px(ctx,0,40,80,80,'#7c7c7c');px(ctx,0,30,80,14,'#503000');
+  px(ctx,10,44,20,20,'#000000');px(ctx,40,44,20,20,'#000000');
+  px(ctx,180,40,76,80,'#7c7c7c');
+  ctx.fillStyle='#f83800';ctx.font='6px DotGothic16,monospace';
+  ctx.fillText('月　正和',8,60);ctx.fillText('月　真子',8,68);ctx.fillText('中瀬　徹',8,76);
+  px(ctx,190,100,18,50,'#7c7c7c');px(ctx,193,90,12,14,'#f87858');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('波止場',4,12);
+}
+function drawBar(ctx,W,H){
+  px(ctx,0,0,W,H,'#000000');px(ctx,20,80,216,60,'#503000');px(ctx,20,78,216,6,'#7c5020');
+  px(ctx,0,20,256,60,'#503000');
+  const bc=['#f83800','#0078f8','#00a800','#7800f8','#f8b800'];
+  for(let x=8;x<240;x+=18){px(ctx,x,24,10,52,bc[Math.floor(x/18)%5]);px(ctx,x+3,22,4,4,'#bcbcbc');}
+  px(ctx,110,56,20,80,'#f878f8');px(ctx,114,44,12,16,'#f8b800');px(ctx,108,100,4,2,'#f83800');
+  px(ctx,150,72,12,18,'#00f8f8');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('BAR HIMENO',4,12);
+}
+function drawApartment(ctx,W,H){
+  px(ctx,0,0,W,H,'#000088');px(ctx,0,H-24,W,24,'#503000');
+  const ac=['#fcfcfc','#bcbcbc','#7c7c7c'];
+  for(let y=10;y<140;y+=18)for(let x=10;x<220;x+=38){
+    px(ctx,x,y,34,14,ac[(x+y)%3]);px(ctx,x+2,y+2,28,4,'#000088');px(ctx,x+2,y+7,20,3,'#000088');
+  }
+  px(ctx,100,50,40,40,'#f87858');
+  for(let i=0;i<40;i++){px(ctx,100+i,50+i,3,3,'#f83800');px(ctx,139-i,50+i,3,3,'#f83800');}
+  px(ctx,200,90,20,60,'#0078f8');px(ctx,203,80,14,14,'#f87858');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('ナカゼのアパート',4,12);
+}
+function drawUrabeShop(ctx,W,H){
+  for(let y=0;y<H;y+=10)for(let x=0;x<W;x+=20){
+    px(ctx,x+(y%20<10?0:10),y,18,8,'#881400');px(ctx,x+(y%20<10?0:10),y+8,18,1,'#000000');
+  }
+  px(ctx,80,80,96,72,'#f8b800');
+  for(let i=0;i<=9;i++){px(ctx,80+i*10,80,2,72,'#503000');px(ctx,80,80+i*8,96,2,'#503000');}
+  [[90,84],[100,84],[110,84],[120,84],[130,84],[90,92],[130,92],[90,100],[100,100]].forEach(([x,y])=>{
+    px(ctx,x,y,8,8,'#503000');px(ctx,x+1,y+1,6,6,'#7c5020');
+  });
+  px(ctx,30,70,24,80,'#7c7c7c');px(ctx,34,58,16,16,'#f87858');
+  ctx.fillStyle='#f8b800';ctx.font='8px DotGothic16,monospace';ctx.fillText('ウラベの店',4,12);
+}
+function drawTsukiHome(ctx,W,H){
+  px(ctx,0,0,W,H,'#000000');px(ctx,0,H-24,W,24,'#503000');
+  px(ctx,0,10,80,120,'#7c5020');
+  const bc=['#f83800','#0078f8','#7800f8','#00a800','#f8b800','#f87858'];
+  for(let y=14;y<120;y+=14)for(let x=2;x<76;x+=8){px(ctx,x,y,6,12,bc[(x+y)%6]);}
+  px(ctx,90,90,120,50,'#503000');px(ctx,90,88,120,6,'#7c5020');
+  px(ctx,100,100,40,20,'#7c7c7c');px(ctx,118,106,6,6,'#f8b800');
+  [[160,120],[180,130],[200,115],[170,140]].forEach(([x,y])=>{
+    ctx.save();ctx.translate(x,y);ctx.rotate((x%3-1)*0.3);
+    px(ctx,-12,-8,24,18,'#fcfcfc');px(ctx,-10,-6,20,14,'#f87858');ctx.restore();
+  });
+  px(ctx,200,60,18,90,'#000088');px(ctx,204,50,10,14,'#000088');
+  ctx.fillStyle='#00f8f8';ctx.font='8px DotGothic16,monospace';ctx.fillText('月真猫の自宅',4,12);
+}
+function drawMatsuriRoom(ctx,W,H){
+  px(ctx,0,0,W,H,'#000000');
+  ctx.strokeStyle='#7800f8';
+  for(let y=0;y<H;y+=30)for(let x=0;x<W;x+=30){
+    ctx.beginPath();ctx.arc(x+15,y+15,12,0,Math.PI*2);ctx.stroke();
+    for(let r=0;r<6;r++){
+      const a=r*Math.PI/3;ctx.beginPath();ctx.moveTo(x+15,y+15);
+      ctx.lineTo(x+15+Math.cos(a)*12,y+15+Math.sin(a)*12);ctx.stroke();
+    }
+  }
+  px(ctx,0,0,W,H,'rgba(0,0,0,0.5)');
+  px(ctx,80,80,96,60,'#503000');px(ctx,80,78,96,6,'#7c5020');
+  px(ctx,100,56,56,36,'#fcfcfc');px(ctx,102,58,52,32,'#7c7c7c');
+  [[90,70],[164,70],[112,70],[148,70]].forEach(([x,y])=>{
+    px(ctx,x,y,4,16,'#f8b800');px(ctx,x+1,y-4,2,4,'#f83800');
+  });
+  [[88,100],[100,100],[112,100],[130,100],[142,100],[154,100],[166,100]].forEach(([x,y])=>{
+    px(ctx,x,y,8,18,'#bcbcbc');px(ctx,x+1,y-8,6,10,'#f8b800');
+    px(ctx,x+2,y-6,2,2,'#000000');px(ctx,x+5,y-6,2,2,'#000000');
+  });
+  px(ctx,4,80,16,80,'#f878f8');px(ctx,6,68,12,16,'#f8b800');
+  ctx.fillStyle='#f878f8';ctx.font='8px DotGothic16,monospace';ctx.fillText('マツリのアパート',4,12);
+}
+function drawFactory(ctx,W,H){
+  px(ctx,0,0,W,H,'#000000');
+  [[10,10],[30,20],[60,8],[100,15],[160,6],[200,12],[240,20]].forEach(([x,y])=>px(ctx,x,y,2,2,'#fcfcfc'));
+  px(ctx,10,10,20,20,'#f8b800');
+  ctx.fillStyle='#7c7c7c';
+  for(let x=0;x<W;x+=40){ctx.fillRect(x,20,6,H);ctx.fillRect(x,50,40,4);ctx.fillRect(x,90,40,4);}
+  [[20,60],[80,70],[150,55],[210,80]].forEach(([x,y])=>px(ctx,x,y,10,6,'#f87858'));
+  px(ctx,110,100,36,68,'rgba(248,184,0,0.15)');
+  px(ctx,120,80,16,88,'#000000');px(ctx,123,68,10,16,'#000000');
+  px(ctx,124,72,3,3,'#00f8f8');px(ctx,129,72,3,3,'#00f8f8');
+  ctx.fillStyle='#f83800';ctx.font='8px DotGothic16,monospace';ctx.fillText('廃工場',4,12);
+  if(G.chapter>=4){
+    px(ctx,0,138,W,30,'rgba(0,0,0,0.8)');
+    ctx.fillStyle='#f8b800';ctx.font='9px DotGothic16,monospace';
+    ctx.fillText('「選択」ボタンでエンディングを選んでください',6,152);
+  }
+}
+
+// ===== INIT =====
+window.onload=()=>{initStartScreen();drawScene();};
+</script>
+</body>
+</html>
