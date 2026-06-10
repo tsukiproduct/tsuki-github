@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>まうの夜廻り</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{height:100%;overflow:hidden;background:#0a0a14;touch-action:none;
+    position:fixed;inset:0;overscroll-behavior:none;
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Yu Gothic",sans-serif}
+  canvas{display:block;position:fixed;inset:0}
+  #probe{position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;
+    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  #mute{
+    position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:5;
+    width:42px;height:42px;border-radius:50%;border:1px solid rgba(244,240,250,.25);
+    background:rgba(20,16,34,.6);color:#f4f0fa;font-size:18px;line-height:40px;text-align:center;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="probe"></div>
+<button id="mute" aria-label="サウンド切替">♪</button>
+
+<script>
+(() => {
+'use strict';
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+let W, H, SAFE_T = 0, SAFE_B = 0;
+function resize(){
+  W = innerWidth;
+  H = (window.visualViewport ? visualViewport.height : innerHeight);
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  const probe = document.getElementById('probe');
+  if (probe){
+    const cs = getComputedStyle(probe);
+    SAFE_T = parseFloat(cs.paddingTop) || 0;
+    SAFE_B = parseFloat(cs.paddingBottom) || 0;
+  }
+}
+resize();
+addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', resize);
+/* iOSの長押しメニュー・ピンチ・ダブルタップ拡大を抑止 */
+addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('gesturestart', e => e.preventDefault());
+let lastTapT = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTapT < 320) e.preventDefault();
+  lastTapT = now;
+}, { passive: false });
+
+/* ================= storage (claude.ai永続 / 失敗時はメモリ) ================ */
+let memHigh = 0;
+const store = {
+  async getHigh(){
+    try{
+      const r = await window.storage.get('mau-yomawari-high');
+      return r ? parseInt(r.value, 10) || 0 : 0;
+    }catch(e){ return memHigh; }
+  },
+  async setHigh(v){
+    memHigh = v;
+    try{ await window.storage.set('mau-yomawari-high', String(v)); }catch(e){}
+  }
+};
+
+/* ================= sound (全てコード生成) ================ */
+let actx = null, muted = false;
+const muteBtn = document.getElementById('mute');
+muteBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  muted = !muted;
+  muteBtn.textContent = muted ? '✕' : '♪';
+});
+function audio(){
+  if (!actx){
+    try{ actx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+  }
+  if (actx && actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type, vol, slide){
+  const a = audio(); if (!a || muted) return;
+  const t0 = a.currentTime;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(slide, 1), t0 + dur);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol || .1, t0 + .01);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(a.destination);
+  o.start(t0); o.stop(t0 + dur + .05);
+}
+const sfx = {
+  pickup(combo){ tone(660 + Math.min(combo, 12) * 40, .15, 'sine', .09, 0); tone(990 + Math.min(combo,12)*40, .2, 'sine', .05); },
+  hit(){ tone(160, .3, 'sawtooth', .12, 60); tone(90, .4, 'square', .08, 40); },
+  warn(){ tone(440, .09, 'square', .06); },
+  dash(){ tone(900, .2, 'sawtooth', .05, 200); },
+  dere(){ [523.25, 659.25, 783.99, 1046.5].forEach((f, i) =>
+      setTimeout(() => tone(f, .8, 'sine', .07), i * 90)); },
+  gameover(){ [392, 311.13, 261.63, 196].forEach((f, i) =>
+      setTimeout(() => tone(f, .5, 'triangle', .09), i * 220)); },
+  start(){ tone(523, .12, 'square', .06); setTimeout(() => tone(784, .18, 'square', .06), 110); }
+};
+
+/* ================= pixel sprites ================ */
+function makeSprite(rows, palette){
+  const h = rows.length, w = rows[0].length;
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const o = off.getContext('2d');
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++){
+      const c = palette[rows[y][x]];
+      if (!c) continue;
+      o.fillStyle = c; o.fillRect(x, y, 1, 1);
+    }
+  return off;
+}
+/* まう: 猫耳・黒髪ツインテ・ピンクパーカー */
+const MAU_PAL = { K:'#16121c', S:'#ffe3d0', E:'#b8742a', P:'#ff9ec4', Q:'#e87da8', W:'#fff', R:'#e87a8a' };
+const mauWalk1 = makeSprite([
+  '.K.......K.',
+  'KK.......KK',
+  '.KKKKKKKKK.',
+  'KKKKKKKKKKK',
+  'K.SSSSSSS.K',
+  'K.SESSSES.K',
+  'K.SSSRSSS.K',
+  'KK.PPPPP.KK',
+  'KK.PWPWP.KK',
+  'KKQPPPPPQKK',
+  'K..PPPPP..K',
+  'K...Q.Q...K',
+  '...S...S...',
+  '...K.K.....'
+], MAU_PAL);
+const mauWalk2 = makeSprite([
+  '.K.......K.',
+  'KK.......KK',
+  '.KKKKKKKKK.',
+  'KKKKKKKKKKK',
+  'K.SSSSSSS.K',
+  'K.SESSSES.K',
+  'K.SSSRSSS.K',
+  'KK.PPPPP.KK',
+  'KK.PWPWP.KK',
+  'KKQPPPPPQKK',
+  'K..PPPPP..K',
+  'K...Q.Q...K',
+  '...S...S...',
+  '.....K.K...'
+], MAU_PAL);
+const mauHurt = makeSprite([
+  '.K.......K.',
+  'KK.......KK',
+  '.KKKKKKKKK.',
+  'KKKKKKKKKKK',
+  'K.SSSSSSS.K',
+  'K.SKSSSKS.K',
+  'K.SSRRRSS.K',
+  'KK.PPPPP.KK',
+  'KK.PWPWP.KK',
+  'KKQPPPPPQKK',
+  'K..PPPPP..K',
+  'K...Q.Q...K',
+  '...S...S...',
+  '...K...K...'
+], MAU_PAL);
+/* ぬいぐるみ(くま) 配色差し替え用 */
+function plushSprite(body, dark){
+  return makeSprite([
+    '.B...B.',
+    'BBB.BBB',
+    '.BBBBB.',
+    'BDBBBDB',
+    'BBBNBBB',
+    '.BBBBB.',
+    '.B...B.'
+  ], { B: body, D: dark, N: dark });
+}
+const PLUSH = [
+  plushSprite('#f3c98b', '#5a4030'),
+  plushSprite('#ffb3c7', '#7a3b52'),
+  plushSprite('#bcd2f7', '#3c4f7a'),
+  plushSprite('#cfeacb', '#3f6644'),
+  plushSprite('#e6d6ff', '#5b4a80')
+];
+
+/* ================= まうの台詞 ================ */
+const LINES = {
+  start: ['ぬいぐるみ拾ってくるう。邪魔しないでう', '夜廻りの時間だう。ついてきたいなら勝手にするう'],
+  combo5: ['その調子う', 'まあまあだう', 'ふーん、できるじゃんう'],
+  combo10: ['悪くないう', '…ちょっとだけ本気出していいう', '今夜は拾えそうだう'],
+  combo20: ['なにそれ、すごいう…ハッ、今のなしう', 'うちより上手いかも…じゃないう!'],
+  hit: ['何してるのう', 'ぼーっとしないでう', '痛そうだう(他人事)', '怪異に触るとかセンスないう'],
+  warn: ['…来るう', '気配がするう'],
+  over_low: ['才能ないう。帰って寝るう', 'お話にならないう'],
+  over_mid: ['まあ…暇つぶしにはなったう', '及第点はあげないう。おしいけどう'],
+  over_high: ['ふーん、やるじゃんう', '今夜は収穫ありだう'],
+  over_top: ['…ちょっとだけ褒めてあげるう', 'この街の夜はうちらのものだう'],
+  newrecord: ['記録更新う。うちの指導のおかげだう'],
+  dere: ['……すごいう。…い、いまのは独り言だう!']
+};
+const pick = arr => arr[(Math.random() * arr.length) | 0];
+
+/* ================= game state ================ */
+const ST = { TITLE: 0, PLAY: 1, OVER: 2, MANUAL: 3 };
+let state = ST.TITLE;
+let t = 0, dt = 0, last = performance.now();
+let score = 0, high = 0, combo = 0, lives = 3, inv = 0, playT = 0;
+let shake = 0, dereShown = false;
+
+store.getHigh().then(v => high = v);
+
+const player = { x: 0, y: 0, tx: 0, ty: 0 };
+let items = [], ghosts = [], hands = [], eyesE = [], pops = [], puffs = [];
+let speech = { text: '噂の真相、確かめてくるう', timer: 99, dere: false };
+function say(text, sec, dere){
+  speech.text = text; speech.timer = sec || 2.4; speech.dere = !!dere;
+}
+
+function resetGame(){
+  score = 0; combo = 0; lives = 3; inv = 0; playT = 0; dereShown = false;
+  items = []; ghosts = []; hands = []; eyesE = []; pops = []; puffs = [];
+  player.x = player.tx = W / 2;
+  player.y = player.ty = H * 0.72;
+  say(pick(LINES.start), 3);
+}
+
+/* ================= spawning ================ */
+let spawnI = 0, spawnG = 0, spawnH = 0, spawnE = 0;
+function spawn(){
+  const d = Math.min(playT / 75, 1);            // 難易度 0→1 (75秒で最大)
+  spawnI -= dt;
+  spawnG -= dt;
+  spawnH -= dt;
+  spawnE -= dt;
+  if (spawnI <= 0){
+    spawnI = 1.0 - d * 0.35 + Math.random() * .5;
+    items.push({ x: 40 + Math.random() * (W - 80), y: -30,
+      vy: 70 + d * 50 + Math.random() * 30, sw: Math.random() * 6.28,
+      img: PLUSH[(Math.random() * PLUSH.length) | 0] });
+  }
+  if (spawnG <= 0){
+    spawnG = 2.2 - d * 1.2 + Math.random() * 1.2;
+    ghosts.push({ x: 30 + Math.random() * (W - 60), y: -40,
+      vy: 60 + d * 80 + Math.random() * 40, sw: Math.random() * 6.28, amp: 30 + Math.random() * 50 });
+  }
+  if (playT > 12 && spawnH <= 0){
+    spawnH = 5.5 - d * 2.5 + Math.random() * 2;
+    const left = Math.random() < .5;
+    hands.push({ side: left ? -1 : 1, y: H * 0.5 + Math.random() * H * 0.35,
+      x: left ? -70 : W + 70, phase: 'warn', timer: .8 });
+    sfx.warn(); if (Math.random() < .4) say(pick(LINES.warn), 1.2);
+  }
+  if (playT > 25 && spawnE <= 0){
+    spawnE = 8 - d * 3 + Math.random() * 3;
+    eyesE.push({ x: 40 + Math.random() * (W - 80), y: -30,
+      phase: 'hover', timer: 1.4, vx: 0, vy: 50, open: 0 });
+  }
+}
+
+/* ================= update ================ */
+function hurt(){
+  if (inv > 0) return;
+  lives--; inv = 1.6; combo = 0; shake = 14;
+  sfx.hit(); say(pick(LINES.hit), 2);
+  if (lives <= 0) gameOver();
+}
+function gameOver(){
+  state = ST.OVER;
+  sfx.gameover();
+  let line;
+  const newRec = score > high;
+  if (newRec){
+    high = score; store.setHigh(high);
+    if (score >= 600 && Math.random() < .15 && !dereShown){
+      line = pick(LINES.dere); speech.dere = true; sfx.dere();
+    } else line = pick(LINES.newrecord);
+  } else {
+    line = score < 100 ? pick(LINES.over_low)
+         : score < 300 ? pick(LINES.over_mid)
+         : score < 600 ? pick(LINES.over_high)
+         : pick(LINES.over_top);
+  }
+  say(line, 99, speech.dere);
+}
+function update(){
+  if (state !== ST.PLAY) return;
+  playT += dt;
+  score += dt * 2;             // 生存ボーナス
+  inv = Math.max(0, inv - dt);
+  spawn();
+
+  /* player follows touch */
+  player.x += (player.tx - player.x) * Math.min(1, dt * 14);
+  player.y += (player.ty - player.y) * Math.min(1, dt * 14);
+  player.x = Math.max(24, Math.min(W - 24, player.x));
+  player.y = Math.max(H * 0.4, Math.min(H - 120 - SAFE_B, player.y));
+
+  /* items */
+  for (let i = items.length - 1; i >= 0; i--){
+    const o = items[i];
+    o.y += o.vy * dt;
+    o.x += Math.sin(t * 2 + o.sw) * 18 * dt;
+    if (o.y > H + 40){ items.splice(i, 1); continue; }
+    if (Math.hypot(o.x - player.x, o.y - player.y) < 36){
+      items.splice(i, 1);
+      combo++;
+      const gain = 10 * Math.min(combo, 10);
+      score += gain;
+      sfx.pickup(combo);
+      pops.push({ x: o.x, y: o.y, text: '+' + gain + (combo > 1 ? ' ×' + combo : ''), life: 1 });
+      for (let k = 0; k < 6; k++) puffs.push({ x: o.x, y: o.y,
+        vx: (Math.random() - .5) * 120, vy: (Math.random() - .5) * 120, life: .6, c: '#ffd9e6' });
+      if (combo === 5) say(pick(LINES.combo5), 1.6);
+      if (combo === 10) say(pick(LINES.combo10), 1.8);
+      if (combo === 20) say(pick(LINES.combo20), 2.2);
+    }
+  }
+  /* ghosts */
+  for (let i = ghosts.length - 1; i >= 0; i--){
+    const g = ghosts[i];
+    g.y += g.vy * dt;
+    g.x += Math.cos(t * 1.5 + g.sw) * g.amp * dt;
+    if (g.y > H + 50){ ghosts.splice(i, 1); continue; }
+    if (Math.hypot(g.x - player.x, g.y - player.y) < 30) hurt();
+  }
+  /* shadow hands */
+  for (let i = hands.length - 1; i >= 0; i--){
+    const h = hands[i];
+    h.timer -= dt;
+    if (h.phase === 'warn'){
+      if (h.timer <= 0){ h.phase = 'sweep'; sfx.dash(); }
+    } else {
+      h.x += h.side * (W + 140) / 1.1 * dt;
+      if ((h.side > 0 && h.x < -80) || (h.side < 0 && h.x > W + 80)){ hands.splice(i, 1); continue; }
+      if (Math.abs(h.y - player.y) < 26 && Math.abs(h.x - player.x) < 44) hurt();
+    }
+  }
+  /* red eyes */
+  for (let i = eyesE.length - 1; i >= 0; i--){
+    const e = eyesE[i];
+    e.open = Math.min(1, e.open + dt * 2);
+    e.timer -= dt;
+    if (e.phase === 'hover'){
+      e.y += e.vy * dt * .4;
+      if (e.timer <= 0){
+        e.phase = 'aim'; e.timer = .5;
+        const d = Math.hypot(player.x - e.x, player.y - e.y) || 1;
+        e.vx = (player.x - e.x) / d * (320 + Math.min(playT, 60) * 2);
+        e.vy = (player.y - e.y) / d * (320 + Math.min(playT, 60) * 2);
+      }
+    } else if (e.phase === 'aim'){
+      if (e.timer <= 0){ e.phase = 'dash'; sfx.dash(); }
+    } else {
+      e.x += e.vx * dt; e.y += e.vy * dt;
+      if (e.x < -60 || e.x > W + 60 || e.y > H + 60 || e.y < -80){ eyesE.splice(i, 1); continue; }
+      if (Math.hypot(e.x - player.x, e.y - player.y) < 26) hurt();
+    }
+  }
+  /* fx */
+  pops.forEach(p => { p.y -= 50 * dt; p.life -= dt; });
+  pops = pops.filter(p => p.life > 0);
+  puffs.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 1.4; });
+  puffs = puffs.filter(p => p.life > 0);
+  shake = Math.max(0, shake - dt * 40);
+  speech.timer -= dt;
+}
+
+/* ================= draw ================ */
+const bldA = [], bldB = [];
+for (let i = 0; i < 14; i++) bldA.push({ x: Math.random(), w: .08 + Math.random() * .14, h: .12 + Math.random() * .2 });
+for (let i = 0; i < 10; i++) bldB.push({ x: Math.random(), w: .1 + Math.random() * .18, h: .2 + Math.random() * .28 });
+const starsBg = Array.from({length: 60}, () => ({ x: Math.random(), y: Math.random() * .5, r: Math.random() + .3, p: Math.random() * 6.28 }));
+let bgScroll = 0;
+
+function drawBG(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#07070f'); g.addColorStop(.6, '#0d0a1a'); g.addColorStop(1, '#1a1226');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  starsBg.forEach(s => {
+    ctx.globalAlpha = .3 + .5 * Math.abs(Math.sin(t + s.p));
+    ctx.fillStyle = '#cfc8e8';
+    ctx.fillRect(s.x * W, s.y * H, s.r, s.r);
+  });
+  ctx.globalAlpha = 1;
+  /* 月(前作とおそろい) */
+  const mr = Math.min(W, H) * .09, mx = W * .8, my = H * .12;
+  const halo = ctx.createRadialGradient(mx, my, mr * .4, mx, my, mr * 3);
+  halo.addColorStop(0, 'rgba(232,220,192,.25)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#e8dcc0';
+  ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.1)';
+  ctx.beginPath(); ctx.arc(mx - mr*.25, my + mr*.15, mr*.18, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx + mr*.3, my - mr*.2, mr*.12, 0, 7); ctx.fill();
+
+  /* ビル(2層スクロール) */
+  if (state === ST.PLAY) bgScroll += dt * 14;
+  drawBuildings(bldB, '#120e20', .55, bgScroll * .4);
+  drawBuildings(bldA, '#1b1430', .75, bgScroll);
+  /* 路面 */
+  ctx.fillStyle = '#241a36';
+  ctx.fillRect(0, H - 46, W, 46);
+}
+function drawBuildings(arr, color, yBase, scroll){
+  ctx.fillStyle = color;
+  arr.forEach(b => {
+    const bx = ((b.x + scroll * .0006) % 1.2 - .1) * W;
+    const bh = b.h * H;
+    ctx.fillRect(bx, H * yBase - bh + H * (1 - yBase), b.w * W, bh);
+    /* 窓明かり */
+    ctx.fillStyle = 'rgba(232,200,140,.18)';
+    const cols = Math.max(1, (b.w * W / 18) | 0);
+    for (let c = 0; c < cols; c++)
+      if ((c * 7 + ((b.x * 100) | 0)) % 3 === 0)
+        ctx.fillRect(bx + 6 + c * 16, H - bh + 10, 5, 7);
+    ctx.fillStyle = color;
+  });
+}
+function drawSpriteC(img, x, y, scale){
+  ctx.drawImage(img, Math.round(x - img.width * scale / 2), Math.round(y - img.height * scale / 2),
+    img.width * scale, img.height * scale);
+}
+function drawGhost(g){
+  ctx.save();
+  ctx.globalAlpha = .85;
+  const grd = ctx.createRadialGradient(g.x, g.y, 2, g.x, g.y, 26);
+  grd.addColorStop(0, 'rgba(240,238,255,.95)');
+  grd.addColorStop(1, 'rgba(240,238,255,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(g.x, g.y, 26, 0, 7); ctx.fill();
+  ctx.fillStyle = '#e8e4f8';
+  ctx.beginPath();
+  ctx.arc(g.x, g.y, 14, Math.PI, 0);
+  const wob = Math.sin(t * 8 + g.sw) * 3;
+  ctx.lineTo(g.x + 14, g.y + 12 + wob);
+  ctx.lineTo(g.x + 7, g.y + 8 - wob);
+  ctx.lineTo(g.x, g.y + 13 + wob);
+  ctx.lineTo(g.x - 7, g.y + 8 - wob);
+  ctx.lineTo(g.x - 14, g.y + 12 + wob);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#181226';
+  ctx.beginPath(); ctx.arc(g.x - 5, g.y - 2, 2.6, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(g.x + 5, g.y - 2, 2.6, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawHand(h){
+  ctx.save();
+  if (h.phase === 'warn'){
+    const a = .35 + .35 * Math.sin(t * 14);
+    ctx.fillStyle = `rgba(220,60,80,${a})`;
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', h.side < 0 ? 18 : W - 18, h.y + 8);
+    ctx.strokeStyle = `rgba(220,60,80,${a * .5})`;
+    ctx.setLineDash([8, 10]);
+    ctx.beginPath(); ctx.moveTo(0, h.y); ctx.lineTo(W, h.y); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#0d0a16';
+    ctx.strokeStyle = 'rgba(160,60,90,.5)';
+    const dir = h.side, x = h.x, y = h.y;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 38, 16, 0, 0, 7);
+    ctx.fill(); ctx.stroke();
+    for (let f = -2; f <= 2; f++){
+      ctx.beginPath();
+      ctx.ellipse(x + dir * 30, y + f * 7, 16, 3.4, f * .12 * dir, 0, 7);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function drawEyes(e){
+  ctx.save();
+  const a = e.phase === 'aim' ? .5 + .5 * Math.sin(t * 20) : 1;
+  [-7, 7].forEach(dx => {
+    const grd = ctx.createRadialGradient(e.x + dx, e.y, 0, e.x + dx, e.y, 12);
+    grd.addColorStop(0, `rgba(255,60,70,${.8 * a * e.open})`);
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(e.x + dx, e.y, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(255,120,120,${a * e.open})`;
+    ctx.beginPath();
+    ctx.ellipse(e.x + dx, e.y, 4, 6 * e.open, 0, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = `rgba(40,0,8,${a * e.open})`;
+    ctx.beginPath();
+    ctx.ellipse(e.x + dx, e.y, 1.2, 5 * e.open, 0, 0, 7);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+function drawHUD(){
+  ctx.save();
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(244,240,250,.9)';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText(String(score | 0), 16, 36 + SAFE_T);
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = 'rgba(244,240,250,.5)';
+  ctx.fillText('BEST ' + (Math.max(high, score) | 0), 16, 54 + SAFE_T);
+  /* lives: ハートぬいぐるみ */
+  for (let i = 0; i < 3; i++){
+    ctx.globalAlpha = i < lives ? 1 : .18;
+    drawHeart(28 + i * 26, 74 + SAFE_T, 8, '#ff9ec4');
+  }
+  ctx.globalAlpha = 1;
+  if (combo >= 2){
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillStyle = combo >= 10 ? '#ffd9e6' : 'rgba(244,240,250,.75)';
+    ctx.fillText(combo + ' COMBO', W / 2, 40 + SAFE_T);
+  }
+  ctx.restore();
+}
+function drawHeart(x, y, s, c){
+  ctx.fillStyle = c;
+  ctx.beginPath();
+  ctx.moveTo(x, y + s * .9);
+  ctx.bezierCurveTo(x - s * 1.4, y - s * .2, x - s * .6, y - s * 1.1, x, y - s * .3);
+  ctx.bezierCurveTo(x + s * .6, y - s * 1.1, x + s * 1.4, y - s * .2, x, y + s * .9);
+  ctx.fill();
+}
+function drawSpeech(){
+  if (speech.timer <= 0) return;
+  ctx.save();
+  const bw = Math.min(W - 28, 420), bh = 64;
+  const bx = (W - bw) / 2, by = H - bh - 8 - Math.max(SAFE_B, 10);
+  ctx.fillStyle = speech.dere ? 'rgba(70,28,52,.92)' : 'rgba(18,14,30,.9)';
+  ctx.strokeStyle = speech.dere ? '#ff9ec4' : 'rgba(244,240,250,.25)';
+  ctx.lineWidth = 1.5;
+  roundRect(bx, by, bw, bh, 14); ctx.fill(); ctx.stroke();
+  /* 顔アイコン */
+  drawSpriteC(speech.dere || inv > 0 && state === ST.PLAY ? mauHurt : mauWalk1, bx + 34, by + bh / 2, 3);
+  ctx.fillStyle = speech.dere ? '#ffd9e6' : '#f4f0fa';
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('まう「' + speech.text + '」', bx + 66, by + bh / 2 + 5, bw - 80);
+  ctx.restore();
+}
+function roundRect(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ================= canvas UIボタン ================ */
+let uiButtons = [];
+function drawButton(id, label, cy, primary){
+  const w = Math.min(W * .72, 280), h = 50;
+  const x = (W - w) / 2, y = cy - h / 2;
+  ctx.save();
+  ctx.fillStyle = primary ? 'rgba(64,24,46,.92)' : 'rgba(18,14,30,.88)';
+  ctx.strokeStyle = primary ? '#ff9ec4' : 'rgba(244,240,250,.3)';
+  ctx.lineWidth = primary ? 2 : 1.2;
+  roundRect(x, y, w, h, 12); ctx.fill(); ctx.stroke();
+  if (primary){
+    ctx.globalAlpha = .25 + .2 * Math.sin(t * 3);
+    ctx.shadowColor = '#ff9ec4'; ctx.shadowBlur = 14;
+    roundRect(x, y, w, h, 12); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = primary ? '#ffd9e6' : '#f4f0fa';
+  ctx.font = 'bold 17px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, W / 2, cy + 6);
+  ctx.restore();
+  uiButtons.push({ id, x, y, w, h });
+}
+function buttonAt(px, py){
+  return uiButtons.find(b => px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h);
+}
+
+function draw(){
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+  drawBG();
+
+  if (state === ST.PLAY || state === ST.OVER){
+    items.forEach(o => drawSpriteC(o.img, o.x, o.y + Math.sin(t * 3 + o.sw) * 2, 4));
+    ghosts.forEach(drawGhost);
+    hands.forEach(drawHand);
+    eyesE.forEach(drawEyes);
+    /* player */
+    if (state === ST.PLAY && !(inv > 0 && ((t * 12) | 0) % 2 === 0)){
+      const img = inv > 0 ? mauHurt : (((t * 6) | 0) % 2 ? mauWalk1 : mauWalk2);
+      drawSpriteC(img, player.x, player.y, 4);
+    }
+    puffs.forEach(p => {
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.c;
+      ctx.fillRect(p.x, p.y, 3, 3);
+    });
+    ctx.globalAlpha = 1;
+    pops.forEach(p => {
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = '#ffd9e6';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.globalAlpha = 1;
+    });
+    drawHUD();
+  }
+
+  if (state === ST.TITLE){
+    uiButtons = [];
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f4f0fa';
+    ctx.font = 'bold 34px serif';
+    ctx.fillText('まうの夜廻り', W / 2, H * .14 + SAFE_T * .5);
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(244,240,250,.5)';
+    ctx.fillText('- TSUKI PRODUCT -', W / 2, H * .175 + SAFE_T * .5);
+    if (high > 0){
+      ctx.fillStyle = 'rgba(232,220,192,.7)';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('BEST ' + high, W / 2, H * .205 + SAFE_T * .5);
+    }
+    drawSpriteC(((t * 3 | 0) % 2) ? mauWalk1 : mauWalk2, W / 2, H * .30, 6);
+    /* ストーリー */
+    const story = [
+      '新月の夜、空からぬいぐるみが降る——',
+      'そんな都市伝説が、この街にはある。',
+      '拾った者にはささやかな幸運を。',
+      'ただし夜には「拾わせまい」とする',
+      '怪異が潜んでいる、とも。',
+      '噂の真相を確かめに、まうは夜の街へ。'
+    ];
+    const sw2 = Math.min(W - 32, 360), sh2 = story.length * 19 + 22;
+    const sx2 = (W - sw2) / 2, sy2 = H * .385;
+    ctx.fillStyle = 'rgba(12,9,22,.75)';
+    ctx.strokeStyle = 'rgba(232,220,192,.25)';
+    ctx.lineWidth = 1;
+    roundRect(sx2, sy2, sw2, sh2, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(244,240,250,.85)';
+    ctx.font = '12.5px serif';
+    story.forEach((l, i) => ctx.fillText(l, W / 2, sy2 + 24 + i * 19));
+    /* メニュー */
+    drawButton('start', 'ゲームスタート', sy2 + sh2 + 44, true);
+    drawButton('manual', '説明書', sy2 + sh2 + 108, false);
+  }
+  if (state === ST.MANUAL){
+    uiButtons = [];
+    ctx.fillStyle = 'rgba(5,4,10,.72)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f4f0fa';
+    ctx.font = 'bold 24px serif';
+    ctx.fillText('説明書', W / 2, SAFE_T + 52);
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = 'rgba(244,240,250,.85)';
+    let my = SAFE_T + 90;
+    ['画面をなぞって まうを動かす',
+     'ぬいぐるみを拾うとスコア+コンボ倍率',
+     '怪異に触れるとコンボ消滅・残機 -1(全3機)',
+     '生きているだけでもスコアは増える'].forEach(l => {
+      ctx.fillText(l, W / 2, my); my += 22;
+    });
+    my += 16;
+    ctx.fillStyle = '#e8dcc0';
+    ctx.font = 'bold 15px serif';
+    ctx.fillText('— 怪異図鑑 —', W / 2, my);
+    my += 40;
+    const ix = Math.max(46, W * .18), tx2 = ix + 52;
+    const beasts = [
+      { icon: yy => drawGhost({ x: ix, y: yy, sw: 0 }),
+        name: '夜霧の幽霊', desc: 'ふらふら漂い降ってくる。数で押してくる。' },
+      { icon: yy => drawHand({ phase: 'sweep', side: 1, x: ix, y: yy }),
+        name: '影の手', desc: '画面端の「!」が合図。横一直線に薙ぎ払う。' },
+      { icon: yy => drawEyes({ x: ix, y: yy, phase: 'hover', open: 1, timer: 0 }),
+        name: '赤い眼', desc: '狙いを定めて突進。点滅したら離れろ。' }
+    ];
+    beasts.forEach(b => {
+      b.icon(my);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffd9e6';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(b.name, tx2, my - 6);
+      ctx.fillStyle = 'rgba(244,240,250,.75)';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(b.desc, tx2, my + 12, W - tx2 - 14);
+      my += 68;
+    });
+    ctx.textAlign = 'center';
+    drawButton('back', 'タイトルへ戻る', Math.max(my + 20, H - 110 - SAFE_B), false);
+  }
+  if (state === ST.OVER){
+    ctx.fillStyle = 'rgba(5,4,10,.62)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f4f0fa';
+    ctx.font = 'bold 26px serif';
+    ctx.fillText('夜廻り、終了', W / 2, H * .3);
+    ctx.font = 'bold 40px sans-serif';
+    ctx.fillText(String(score | 0), W / 2, H * .4);
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = score >= high ? '#ffd9e6' : 'rgba(244,240,250,.6)';
+    ctx.fillText((score >= high ? '★ NEW RECORD' : 'BEST ' + high), W / 2, H * .45);
+    ctx.fillStyle = 'rgba(244,240,250,' + (.4 + .4 * Math.sin(t * 3)) + ')';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('タップでもう一周', W / 2, H * .55);
+  }
+  drawSpeech();
+  ctx.restore();
+}
+
+/* ================= input ================ */
+let dragging = false, sx = 0, sy = 0, px0 = 0, py0 = 0;
+function pos(e){ const p = e.touches ? e.touches[0] : e; return { x: p.clientX, y: p.clientY }; }
+function down(e){
+  e.preventDefault();
+  audio();
+  const p = pos(e);
+  if (state === ST.TITLE){
+    const b = buttonAt(p.x, p.y);
+    if (b && b.id === 'start'){ state = ST.PLAY; resetGame(); sfx.start(); }
+    else if (b && b.id === 'manual'){ state = ST.MANUAL; sfx.warn(); say('読んでから来てう', 3); }
+    return;
+  }
+  if (state === ST.MANUAL){
+    state = ST.TITLE; sfx.warn();
+    say('準備はいいう?', 99);
+    return;
+  }
+  if (state === ST.OVER){
+    if (overCool <= 0){ state = ST.PLAY; resetGame(); sfx.start(); }
+    return;
+  }
+  dragging = true;
+  sx = p.x; sy = p.y; px0 = player.tx; py0 = player.ty;
+}
+function move(e){
+  if (!dragging || state !== ST.PLAY) return;
+  e.preventDefault();
+  const p = pos(e);
+  player.tx = px0 + (p.x - sx) * 1.25;
+  player.ty = py0 + (p.y - sy) * 1.25;
+}
+function up(){ dragging = false; }
+cv.addEventListener('touchstart', down, { passive: false });
+cv.addEventListener('touchmove', move, { passive: false });
+cv.addEventListener('touchend', up);
+cv.addEventListener('mousedown', down);
+cv.addEventListener('mousemove', move);
+cv.addEventListener('mouseup', up);
+/* PC: 矢印キー */
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === ' ' || e.key === 'Enter'){
+    audio();
+    if (state === ST.TITLE){ state = ST.PLAY; resetGame(); sfx.start(); }
+    else if (state === ST.MANUAL){ state = ST.TITLE; say('準備はいいう?', 99); }
+    else if (state === ST.OVER && overCool <= 0){ state = ST.PLAY; resetGame(); sfx.start(); }
+  }
+});
+addEventListener('keyup', e => keys[e.key] = false);
+
+let overCool = 0;
+/* ================= main loop ================ */
+function frame(now){
+  dt = Math.min((now - last) / 1000, .05);
+  last = now; t += dt;
+  if (state === ST.PLAY){
+    const k = 320 * dt;
+    if (keys.ArrowLeft) player.tx -= k;
+    if (keys.ArrowRight) player.tx += k;
+    if (keys.ArrowUp) player.ty -= k;
+    if (keys.ArrowDown) player.ty += k;
+  }
+  if (state === ST.OVER) overCool = Math.max(0, (overCool === 0 ? .8 : overCool) - dt);
+  else overCool = 0;
+  update();
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
