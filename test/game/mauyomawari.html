@@ -61,16 +61,23 @@ document.addEventListener('touchend', e => {
 
 /* ================= storage (claude.ai永続 / 失敗時はメモリ) ================ */
 let memHigh = 0;
+const SAVE_KEY = 'mau-yomawari-high';
 const store = {
   async getHigh(){
     try{
-      const r = await window.storage.get('mau-yomawari-high');
+      const r = await window.storage.get(SAVE_KEY);          // Claude内プレビュー
       return r ? parseInt(r.value, 10) || 0 : 0;
-    }catch(e){ return memHigh; }
+    }catch(e){
+      try{ return parseInt(localStorage.getItem(SAVE_KEY), 10) || 0; }  // 公開サイト(端末内保存)
+      catch(e2){ return memHigh; }                            // 最終手段: メモリ
+    }
   },
   async setHigh(v){
     memHigh = v;
-    try{ await window.storage.set('mau-yomawari-high', String(v)); }catch(e){}
+    try{ await window.storage.set(SAVE_KEY, String(v)); }
+    catch(e){
+      try{ localStorage.setItem(SAVE_KEY, String(v)); }catch(e2){}
+    }
   }
 };
 
