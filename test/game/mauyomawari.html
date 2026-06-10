@@ -288,6 +288,7 @@ function hurt(){
 }
 function gameOver(){
   state = ST.OVER;
+  overCool = .8;            // 誤タップ防止: 0.8秒後から再開可
   sfx.gameover();
   let line;
   const newRec = score > high;
@@ -722,9 +723,11 @@ function draw(){
     ctx.font = '13px sans-serif';
     ctx.fillStyle = score >= high ? '#ffd9e6' : 'rgba(244,240,250,.6)';
     ctx.fillText((score >= high ? '★ NEW RECORD' : 'BEST ' + high), W / 2, H * .45);
-    ctx.fillStyle = 'rgba(244,240,250,' + (.4 + .4 * Math.sin(t * 3)) + ')';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('タップでもう一周', W / 2, H * .55);
+    if (overCool <= 0){
+      ctx.fillStyle = 'rgba(244,240,250,' + (.4 + .4 * Math.sin(t * 3)) + ')';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('タップでもう一周', W / 2, H * .55);
+    }
   }
   drawSpeech();
   ctx.restore();
@@ -794,8 +797,7 @@ function frame(now){
     if (keys.ArrowUp) player.ty -= k;
     if (keys.ArrowDown) player.ty += k;
   }
-  if (state === ST.OVER) overCool = Math.max(0, (overCool === 0 ? .8 : overCool) - dt);
-  else overCool = 0;
+  if (state === ST.OVER) overCool = Math.max(0, overCool - dt);
   update();
   draw();
   requestAnimationFrame(frame);
